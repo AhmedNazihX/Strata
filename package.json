@@ -1,0 +1,12 @@
+{
+  "name": "strata",
+  "version": "1.0.0",
+  "description": "Narrated, layered architecture and flow diagrams as self-contained interactive HTML.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "bin": { "strata": "./bin/strata.mjs" },
+  "engines": { "node": ">=18" },
+  "dependencies": {},
+  "optionalDependencies": {}
+}

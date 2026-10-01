@@ -1,0 +1,412 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strata/lifecycle.schema.json",
+  "title": "Strata lifecycle diagram",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "diagram_type": {
+      "const": "lifecycle"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 72
+        },
+        "subtitle": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "output": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "pattern": "^[^/\\\\][^\\\\]*\\.html$",
+          "description": "Relative path of the HTML to write."
+        },
+        "theme": {
+          "enum": [
+            "dark",
+            "light"
+          ],
+          "description": "Opening theme. The viewer can switch either way."
+        },
+        "motion": {
+          "enum": [
+            "on",
+            "off"
+          ],
+          "description": "Travelling pulses on active links. \"off\" still highlights."
+        },
+        "autoplay": {
+          "type": "boolean"
+        },
+        "stepSeconds": {
+          "type": "number",
+          "minimum": 3,
+          "maximum": 30
+        },
+        "width": {
+          "type": "number",
+          "minimum": 900,
+          "maximum": 2600
+        },
+        "height": {
+          "type": "number",
+          "minimum": 600,
+          "maximum": 1800
+        },
+        "repository": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "url": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "ref": {
+              "type": "string",
+              "maxLength": 80,
+              "description": "Commit or tag the diagram was traced at."
+            }
+          }
+        }
+      },
+      "required": [
+        "title",
+        "output"
+      ]
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "accent": {
+            "enum": [
+              "blue",
+              "teal",
+              "amber",
+              "violet",
+              "green",
+              "rose",
+              "gold",
+              "cyan"
+            ],
+            "description": "Defaults to the ramp position."
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "maxItems": 10
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+          },
+          "layer": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "sublabel": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "tag": {
+            "type": "string",
+            "maxLength": 24
+          },
+          "kind": {
+            "enum": [
+              "active",
+              "initial",
+              "waiting",
+              "terminal",
+              "error"
+            ]
+          },
+          "col": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 48,
+            "description": "Column on the layer. Leave it out and placement follows declaration order."
+          },
+          "span": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "How many columns the box covers."
+          },
+          "pos": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "size": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": 40
+              },
+              {
+                "type": "number",
+                "minimum": 28
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Shown when a viewer opens the node."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^[^\\s:][^:]*(:\\d+(-\\d+)?)?$",
+              "description": "A repo-relative path, optionally with :line or :start-end. Checked against --repo-root."
+            },
+            "maxItems": 12
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 80
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 28
+          },
+          "variant": {
+            "enum": [
+              "transition",
+              "retry",
+              "timeout",
+              "failure"
+            ]
+          },
+          "fromSide": {
+            "enum": [
+              "top",
+              "bottom",
+              "left",
+              "right"
+            ]
+          },
+          "toSide": {
+            "enum": [
+              "top",
+              "bottom",
+              "left",
+              "right"
+            ]
+          },
+          "via": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "maxItems": 8,
+            "description": "Explicit bends. Only for a route the engine cannot find."
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 400
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
+      "maxItems": 160
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "lede": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 440
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(\\*|[a-z0-9][a-z0-9_-]{0,47})$"
+            },
+            "maxItems": 64,
+            "description": "Node ids to light up, or [\"*\"] for all."
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+            },
+            "maxItems": 64
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "k": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "v": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 180
+                }
+              },
+              "required": [
+                "k",
+                "v"
+              ]
+            },
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "title",
+          "lede"
+        ]
+      },
+      "maxItems": 24
+    },
+    "legend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 90
+          },
+          "accent": {
+            "enum": [
+              "blue",
+              "teal",
+              "amber",
+              "violet",
+              "green",
+              "rose",
+              "gold",
+              "cyan"
+            ]
+          }
+        },
+        "required": [
+          "label"
+        ]
+      },
+      "maxItems": 8
+    }
+  },
+  "required": [
+    "schema_version",
+    "diagram_type",
+    "meta",
+    "nodes"
+  ]
+}
