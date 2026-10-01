@@ -62,6 +62,11 @@ export function classifyLines(text, path) {
       if (!line.includes(syntax.block[1])) inBlock = true;
       continue;
     }
+    // A string that opens mid-line (`PROMPT = """\`) leaves an odd count of the
+    // mark behind. Without tracking it, the string's closing line would be read
+    // as a docstring *opening* and flip every later line to comment.
+    const opened = (syntax.triple || []).find((mark) => line.split(mark).length % 2 === 0);
+    if (opened) openTriple = opened;
     out.push('code');
   }
   return out;
