@@ -97,7 +97,7 @@ export default {
     {
       title: 'Shipping happens later',
       lede: 'Nothing about picking and packing needs to finish while the shopper waits. Checkout publishes one event and returns; fulfilment picks it up on its own schedule and books the carrier.',
-      nodes: ['checkout', 'bus', 'fulfil', 'carrier', 'status'],
+      nodes: ['checkout', 'bus', 'fulfil', 'carrier', 'status', 'gw'],
       links: ['l-emit', 'l-consume', 'l-ship', 'l-status'],
       notes: [
         { k: 'events topic', v: 'The seam between paying and shipping. Either side can be redeployed without the other.' },

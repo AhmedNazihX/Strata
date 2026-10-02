@@ -21,14 +21,40 @@ export function rectOf(node) {
   };
 }
 
-export function anchor(rect, side) {
+const ANCHOR_INSET = 26;
+
+/**
+ * Where a link meets a box.
+ *
+ * A link leaves the point on that edge nearest the thing it is going to, not
+ * the middle of the edge. On an ordinary box the two are nearly the same; on a
+ * node spanning most of the page they are not, and anchoring at the centre
+ * sends every link on a long sideways run through empty space before it can
+ * drop — which reads as a detour the diagram never explains.
+ */
+export function anchor(rect, side, toward = null) {
+  const alongX = () => (toward
+    ? clamp(toward.cx, rect.x + inset(rect.w), rect.right - inset(rect.w))
+    : rect.cx);
+  const alongY = () => (toward
+    ? clamp(toward.cy, rect.y + inset(rect.h), rect.bottom - inset(rect.h))
+    : rect.cy);
+
   switch (side) {
-    case 'top': return [rect.cx, rect.y];
-    case 'bottom': return [rect.cx, rect.bottom];
-    case 'left': return [rect.x, rect.cy];
-    case 'right': return [rect.right, rect.cy];
+    case 'top': return [alongX(), rect.y];
+    case 'bottom': return [alongX(), rect.bottom];
+    case 'left': return [rect.x, alongY()];
+    case 'right': return [rect.right, alongY()];
     default: return [rect.cx, rect.cy];
   }
+}
+
+function inset(extent) {
+  return Math.min(ANCHOR_INSET, extent / 4);
+}
+
+function clamp(value, low, high) {
+  return low > high ? (low + high) / 2 : Math.min(Math.max(value, low), high);
 }
 
 /**
@@ -119,14 +145,14 @@ export function route(from, to, spec = {}, obstacles = []) {
   const fromSide = spec.fromSide || autoFrom;
   const toSide = spec.toSide || autoTo;
   if (Array.isArray(spec.via) && spec.via.length) {
-    const points = dedupe([anchor(from, fromSide), ...spec.via.map((p) => [p[0], p[1]]), anchor(to, toSide)]);
+    const points = dedupe([anchor(from, fromSide, to), ...spec.via.map((p) => [p[0], p[1]]), anchor(to, toSide, from)]);
     return { points, sides: [fromSide, toSide], clean: isClean(points, obstacles, skip) };
   }
 
   const attempt = (f, t) => {
     const pts = (f === 'top' || f === 'bottom')
-      ? routeVertical(anchor(from, f), anchor(to, t), from, to, obstacles, skip)
-      : routeHorizontal(anchor(from, f), anchor(to, t), from, to, obstacles, skip);
+      ? routeVertical(anchor(from, f, to), anchor(to, t, from), from, to, obstacles, skip)
+      : routeHorizontal(anchor(from, f, to), anchor(to, t, from), from, to, obstacles, skip);
     return { points: pts, sides: [f, t], clean: isClean(pts, obstacles, skip) };
   };
 

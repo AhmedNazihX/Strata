@@ -30,7 +30,7 @@ export default {
     {
       title: 'Build before anything else',
       lede: 'A merge does not deploy anything; it queues a build. The two outcomes are deliberately asymmetric: green moves forward into a waiting state, red stops dead and is allowed to be retried.',
-      nodes: ['queued', 'building', 'failed'],
+      nodes: ['queued', 'building', 'staged', 'failed'],
       links: ['r1', 'r2', 'r3'],
       notes: [
         { k: 'queued', v: 'The entry point. Merging is cheap; deploying is not, so they are separate events.' },
@@ -40,7 +40,7 @@ export default {
     {
       title: 'A human has to say yes',
       lede: 'Staged is a waiting state, not a slow one. Nothing is running, nothing is costing anything, and the release will sit here indefinitely until somebody approves it or the clock runs out.',
-      nodes: ['building', 'staged', 'failed'],
+      nodes: ['building', 'staged', 'canary', 'failed'],
       links: ['r2', 'r4', 'r7'],
       notes: [
         { k: 'staged', v: 'The only place a person is required. Everything else is decided by signals.' },
@@ -60,7 +60,7 @@ export default {
     {
       title: 'Three ways to end',
       lede: 'Live, rolled back, and failed are all terminal, and that is the point: at any moment a release is in exactly one of seven states, and anyone can say which without asking who was watching.',
-      nodes: ['live', 'rolledback', 'failed', 'queued'],
+      nodes: ['live', 'rolledback', 'failed', 'queued', 'canary'],
       links: ['r6', 'r8'],
       notes: [
         { k: 'rolled back', v: 'The previous version is serving. The release is over, and the next one starts from queued.' },

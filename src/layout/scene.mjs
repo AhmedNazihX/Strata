@@ -39,6 +39,17 @@ export function finishScene({ doc, frame, layers, nodes, marks = [], axis = null
   const obstacles = placed.map(rectOf);
   const links = (doc.links || []).map((link) => buildLink(link, byId, obstacles, frame));
 
+  // Labels are placed after every route is known, one at a time, each one
+  // treating the labels already down as obstacles. Placing them independently
+  // is how "2nd opinion" and "extract, score" ended up printed on top of each
+  // other, which reads as neither.
+  const taken = [];
+  for (const link of links) {
+    if (!link || !link.label) continue;
+    link.labelAt = placeLabel(link.label, link.points, obstacles, frame, taken);
+    if (link.labelAt) taken.push(rectOfLabel(link.labelAt));
+  }
+
   return {
     type: doc.diagram_type,
     meta: doc.meta,
@@ -99,7 +110,7 @@ function buildLink(link, byId, obstacles, frame) {
     length,
     accent: from.accent,
     label: link.label || '',
-    labelAt: link.label ? placeLabel(link.label, routed.points, obstacles, frame) : null,
+    labelAt: null,   // placed in a second pass, once every route is known
   };
 }
 
@@ -117,7 +128,7 @@ const PAGE_INSET = 6;
  * printed over a component reads as belonging to it, which is worse than a
  * label sitting slightly off-centre on a shorter leg.
  */
-function placeLabel(text, points, obstacles, frame) {
+function placeLabel(text, points, obstacles, frame, taken = []) {
   const w = measureText(text, { size: TYPE.linkLabel }) + 12;
   const h = TYPE.linkLabel + 8;
   const runs = segmentsOf(points).sort((a, b) => b.length - a.length);
@@ -129,13 +140,20 @@ function placeLabel(text, points, obstacles, frame) {
     for (const t of LABEL_SLIDES) {
       const at = lerp(run, t);
       for (const box of candidatesAt(at, run, w, h, obstacles)) {
-        const cost = overlapArea(box, obstacles);
+        // Two labels on top of each other are unreadable; a label touching a
+        // box is merely untidy. Weight accordingly.
+        const cost = overlapArea(box, obstacles) + overlapArea(box, taken) * 3;
         if (cost === 0) return clampToPage(box, frame);
         if (cost < bestCost) { bestCost = cost; best = box; }
       }
     }
   }
   return best ? clampToPage(best, frame) : null;
+}
+
+/** A label box as a plain rect, for use as an obstacle. */
+function rectOfLabel(label) {
+  return { x: label.x - label.w / 2, y: label.y, w: label.w, h: label.h };
 }
 
 /* A label that leaves the page is worse than one slightly off its line. */

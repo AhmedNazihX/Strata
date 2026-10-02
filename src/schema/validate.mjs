@@ -168,6 +168,28 @@ function checkAdvisory(doc, type) {
     }
   }
 
+  /* A lit connector leaving an unlit box reads as a mistake: the eye follows
+     the highlight to a node the step is not talking about. */
+  const linkById = new Map((doc.links || []).map((l) => [l.id, l]));
+  (doc.steps || []).forEach((step, index) => {
+    if ((step.nodes || []).includes('*')) return;
+    const lit = new Set(step.nodes || []);
+    const dangling = new Set();
+    for (const id of step.links || []) {
+      const link = linkById.get(id);
+      if (!link) continue;
+      if (!lit.has(link.from)) dangling.add(link.from);
+      if (!lit.has(link.to)) dangling.add(link.to);
+    }
+    if (dangling.size) {
+      warnings.push(new Issue(
+        `steps[${index}].links`,
+        `lights a connector onto ${[...dangling].join(', ')}, which the step leaves dim`,
+        'add those nodes to the step, or drop the link from it',
+      ));
+    }
+  });
+
   const steps = doc.steps || [];
   if (steps.length === 1) {
     warnings.push(new Issue('steps', 'one step is not a walkthrough', 'drop steps entirely, or write the whole sequence'));
