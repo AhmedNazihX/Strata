@@ -27,19 +27,29 @@ Examples below write `strata`.
 
 ## The fast path
 
+0. **For a diagram of real code, ask first whether the user wants code mapping** — each
+   node and link citing the lines it rests on, embedded so a click opens the code. Ask once,
+   before reading the repository, with a single question (AskUserQuestion where available):
+   *with code mapping* (slower: exact line citations, `--repo-root` checks, a reviewer
+   agent) or *without* (faster: the same tracing, no citations). Skip the question when the
+   user already said, or when the diagram is not of a repository. The choice sets the
+   **mode** used in steps 2, 4 and 6 and in `references/repository-evidence.md`.
 1. **Pick a type** from the router below. One question decides it: what is the reader
    meant to learn?
 2. **Read one example and the authoring reference** — `examples/<type>.mjs` and
    `references/authoring.md` — in a single batch. For a diagram of real code, also
    `references/repository-evidence.md`. Examples teach shape, never facts: use fresh ids,
-   your own wording, your own structure.
+   your own wording, your own structure. Without code mapping, skip the Citations section
+   of that reference; the tracing rules still apply.
 3. **Write the candidate JSON** straight through. Do not plan coordinates in prose or
    validate a stub. Give it `layers`, `nodes` (with `layer`, and `col` except in a
    `workflow`), `links` that all have an `id`, and — unless the user asked for a still
    diagram — a `steps` walkthrough whose ledes explain *why*, not only *what*.
 4. **Iterate with `validate`.** It runs the schema and geometry gates in about a tenth of a
    second and writes nothing. Fix what it names and rerun until it exits 0. For a diagram
-   of real code, pass `--repo-root <path>` from the first run so every citation is checked.
+   of real code **with code mapping**, pass `--repo-root <path>` from the first run so every
+   citation is checked. Without it, write no `sources`, omit `--repo-root`, and ignore the
+   "links cite no code" warning.
 
    ```
    strata validate candidate.json --repo-root <path>
@@ -49,9 +59,11 @@ Examples below write `strata`.
    browser gate, which takes several seconds. A non-zero exit is never success: fix the
    cause and rerun. Every failure message says what to do; `references/troubleshooting.md`
    covers the rare cases it does not.
-6. **For a diagram of real code, have it reviewed before handing it over.** A reviewer agent
-   in a fresh context checks every node, link and label against the code and looks for
-   connections the diagram leaves out (`references/repository-evidence.md`, step 6).
+6. **For a diagram of real code with code mapping, have it reviewed before handing it
+   over.** A reviewer agent in a fresh context checks every node, link and label against the
+   code and looks for connections the diagram leaves out (`references/repository-evidence.md`,
+   step 6). Without code mapping, skip the review and offer it when you hand the diagram
+   over.
 
 Unless the user names a location, put each request in its own folder
 `.strata/<type>-<slug>/` with `candidate.json` and the HTML beside it, and set
@@ -116,7 +128,8 @@ network reference is the web-font stylesheet. `references/style.md` covers the s
 - Report the gates as they came back. A skipped gate is not a passed one, and do not claim
   you looked at the rendered page unless you opened it.
 - Citations are checked and embedded only with `--repo-root`; without it, say they are
-  unverified.
+  unverified. A diagram built without code mapping has none: say so, and that nodes open
+  no code.
 - **Passing every gate means the diagram is legible and its citations resolve, not that it
   is complete or correct.** Say whether a reviewer looked for missing connections.
 - A diagram of real code is traced from the code: every claim is something you read, not

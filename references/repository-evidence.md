@@ -5,6 +5,11 @@ is worse than none, because it is confidently wrong and it looks the same.
 
 ## The procedure
 
+Steps 1–4 apply in both modes. **Without code mapping** (the user chose the faster mode),
+skip step 5 and the Citations section — write no `sources` and do not pass `--repo-root` —
+and skip step 6 unless the user asks for a review. Still draw only what you opened: the
+speed comes from not pinning line ranges, not from tracing less.
+
 1. **Find the entry points first.** The route table, the CLI commands, the graph
    definition, the worker's subscribe call. These are the nodes; everything else is detail
    hanging off them.

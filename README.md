@@ -96,8 +96,8 @@ For real work, the agent writes `candidate.json` and runs:
 strata finalize candidate.json
 ```
 
-For a diagram that describes actual code, add the checkout so citations are verified and the
-cited lines are embedded:
+For a diagram that describes actual code with [code mapping](#code-mapping-is-optional), add
+the checkout so citations are verified and the cited lines are embedded:
 
 ```bash
 strata finalize candidate.json --repo-root .
@@ -196,6 +196,20 @@ either side. The reader needs no repository, no network, and no link to a forge.
 
 The gate **fails a range that contains no code**, because `file.py:1-30` lands on the module
 docstring and a citation made of prose proves only that somebody wrote a docstring.
+
+### Code mapping is optional
+
+Before diagramming a repository, the agent asks whether you want code mapping.
+
+- **With it** — every node and link cites the lines it rests on, `--repo-root` checks each
+  citation, the code is embedded, and a reviewer agent in a fresh context checks the diagram
+  against the code before it is handed over.
+- **Without it** — faster. The agent still traces the code and draws only what it read, but
+  writes no `sources`, skips `--repo-root` and the review (it offers one instead), and the
+  nodes open no code.
+
+The time saved is in pinning exact line ranges and in the review pass, not in reading less.
+Say which you want in the request and the agent will not ask.
 
 ## Reference
 
