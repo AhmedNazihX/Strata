@@ -70,37 +70,40 @@ export async function checkInBrowser(htmlPath, options = {}) {
   const ran = [];
   const absent = [];
 
-  for (const name of wanted) {
-    const engine = found.engines[name];
-    if (!engine) { absent.push(name); continue; }
+  // Each engine is launched once: it runs the checks, then takes the frame the
+  // engines are compared on. Relaunching both for the comparison, and a third
+  // browser to diff the frames, cost about a third of every finalize.
+  const shots = {};
+  const open = [];
+  try {
+    for (const name of wanted) {
+      const engine = found.engines[name];
+      if (!engine) { absent.push(name); continue; }
 
-    let browser;
-    try {
-      browser = await engine.launch();
-    } catch (error) {
-      absent.push(`${name} (${firstLine(error.message)})`);
-      continue;
-    }
-
-    try {
+      let browser;
+      try {
+        browser = await engine.launch();
+      } catch (error) {
+        absent.push(`${name} (${firstLine(error.message)})`);
+        continue;
+      }
+      open.push(browser);
       findings.push(...(await runChecks(browser, htmlPath, timeout)).map((f) => ({ ...f, engine: name })));
       ran.push(name);
-    } finally {
-      await browser.close().catch(() => {});
+      if (wanted.length > 1) shots[name] = await frameOf(browser, htmlPath, timeout).catch(() => null);
     }
-  }
 
-  if (!ran.length) {
-    return {
-      status: 'unavailable',
-      reason: `no browser engine would start (${absent.join('; ')})`,
-      remedy: 'npx playwright install chromium webkit',
-      findings,
-    };
-  }
-
-  if (ran.length > 1) {
-    findings.push(...await compareEngines(found, ran, htmlPath, timeout));
+    if (!ran.length) {
+      return {
+        status: 'unavailable',
+        reason: `no browser engine would start (${absent.join('; ')})`,
+        remedy: 'npx playwright install chromium webkit',
+        findings,
+      };
+    }
+    if (ran.length > 1) findings.push(...await compareEngines(open[open.length - 1], ran, shots));
+  } finally {
+    await Promise.all(open.map((browser) => browser.close().catch(() => {})));
   }
 
   const errors = findings.filter((f) => f.level === 'error');
@@ -121,29 +124,11 @@ export async function checkInBrowser(htmlPath, options = {}) {
  * Safari with no glow and square corners. This renders the same frame in each
  * engine, reduces both to a small greyscale signature, and compares them.
  */
-async function compareEngines(found, ran, htmlPath, timeout) {
-  const shots = {};
-  for (const name of ran) {
-    const browser = await found.engines[name].launch().catch(() => null);
-    if (!browser) return [];
-    try {
-      const page = await browser.newPage({ viewport: COMPARE_VIEWPORT });
-      await page.goto(`file://${htmlPath}`, { waitUntil: 'load', timeout });
-      // Animation phase differs between engines by definition, so freeze it.
-      await page.evaluate(() => { if (window.TL) window.TL.setMotion('off', false); });
-      await page.waitForTimeout(400);
-      shots[name] = (await page.screenshot({ type: 'png' })).toString('base64');
-      await page.close();
-    } finally {
-      await browser.close().catch(() => {});
-    }
-  }
-
+async function compareEngines(browser, ran, shots) {
   const [a, b] = ran;
-  const browser = await found.engines.chromium.launch().catch(() => null);
-  if (!browser) return [];
+  if (!shots[a] || !shots[b]) return [];
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     await page.goto('about:blank');
     const diff = await page.evaluate(compareInPage, [shots[a], shots[b]]);
     const detail = `${a} and ${b} differ by ${diff.mean.toFixed(2)} of 255 on average`
@@ -156,7 +141,21 @@ async function compareEngines(found, ran, htmlPath, timeout) {
         : detail,
     }];
   } finally {
-    await browser.close().catch(() => {});
+    await page.close().catch(() => {});
+  }
+}
+
+/* One frame of the page with motion frozen, as a base64 PNG. Animation phase
+   differs between engines by definition, so it is stopped first. */
+async function frameOf(browser, htmlPath, timeout) {
+  const page = await browser.newPage({ viewport: COMPARE_VIEWPORT });
+  try {
+    await page.goto(`file://${htmlPath}`, { waitUntil: 'load', timeout });
+    await page.evaluate(() => { if (window.TL) window.TL.setMotion('off', false); });
+    await page.waitForTimeout(400);
+    return (await page.screenshot({ type: 'png' })).toString('base64');
+  } finally {
+    await page.close().catch(() => {});
   }
 }
 

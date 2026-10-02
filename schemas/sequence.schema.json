@@ -328,7 +328,7 @@
           "lede": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 440
+            "maxLength": 700
           },
           "nodes": {
             "type": "array",

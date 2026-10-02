@@ -26,7 +26,7 @@ export const USAGE = `strata — narrated architecture and flow diagrams as stan
   doctor                                    report what this install can do
 
 Flags
-  --repo-root <path>    verify every nodes[].sources entry against a real checkout
+  --repo-root <path>    verify every node and link citation against a real checkout
   --no-browser          skip the browser gate and say so in the receipt
   --json                machine-readable receipt on stdout
   --quiet               errors only

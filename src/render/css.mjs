@@ -162,7 +162,7 @@ a:hover { color: var(--flow-bright); }
   padding: 26px 30px; display: flex; flex-direction: column; gap: 16px;
 }
 .tl-cap-grid { display: flex; gap: 32px; flex-grow: 1; min-height: 0; }
-.tl-cap-left { width: 540px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+.tl-cap-left { width: 640px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
 .tl-step-no {
   font-family: ${FONTS.mono}; font-size: 10.5px; letter-spacing: 1.6px; color: var(--flow);
 }

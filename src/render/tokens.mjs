@@ -90,7 +90,7 @@ export const GEO = {
   margin: 16,
   gutter: 194,      // left label column, where a layout uses rails
   headerH: 96,
-  captionH: 318,
+  captionH: 350,   // room for a seven-line lede under the step title
   railGap: 40,      // room for three runs between rails, linkGap clear either side
   nodeGap: 40,      // and for three vertical runs between columns
   linkGap: 11,      // clearance a routed link keeps from any node box (the gate demands 10)

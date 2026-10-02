@@ -42,11 +42,10 @@ tier.
   directly under the `col: 3` node of the rail above it, which is what makes a reader's eye
   travel down a request path. Leave `col` out and nodes fill left to right in declaration
   order — fine for a simple row, wrong as soon as two rails should line up.
-- **In a `workflow`, leave `col` out unless you mean to pin a node.** There the flow itself
-  places each step: a node with no `col` goes one column after the step that leads to it.
-  Every `col` you do write is honoured exactly, so a written `col` that disagrees with the
-  flow draws a step before the one it follows; the gate warns that the link "points
-  backwards". Pin a column only to line a lane up under a node in another lane.
+- **In a `workflow`, leave `col` out unless you mean to pin a node.** The flow places each
+  step one column after the step that leads to it. A `col` you write is honoured exactly, so
+  one that disagrees with the flow draws a step before the one it follows (the gate warns
+  "points backwards"). Pin only to line a lane up under a node in another lane.
 - **`span`** widens a node across several columns. Use it for something that genuinely
   covers a range, not to fit a long label.
 - **`kind`** picks the vocabulary for the type (`service`, `store`, `queue`, `external`,
@@ -70,16 +69,13 @@ that has one, and a diagnostic can only name one.
 
 `variant` carries meaning per type (`dashed`, `async`, `security`, `yes`, `no`, `retry`,
 `return`, `stream`, `cdc`, `failure`, …) and the renderer styles it. `label` sits on the
-connector and cannot wrap, so keep it to two or three words — between two adjacent boxes
-there are only 40px of gutter, and a label longer than that gets lifted clear of the row.
-A label must read as naming its own line: the gate fails one that is more than 48px from
-it, nearer another line, printed across another line or label, or over a box's text. When
-a label has no such place, drop it — a label is optional, and the box it points at often
-already says it. A line's `detail` is shown on the panel of the node it leaves.
+connector and cannot wrap, so keep it to two or three words. It is optional: the engine
+places it only where it unmistakably names its own line, and leaves it off with a warning
+when there is no such place — often the box it points at already says it.
 
-`sources` takes the same `path:start-end` entries as a node, for the code that makes the
-connection. In a diagram traced from code every link should have them; see
-`repository-evidence.md`.
+`detail` and `sources` (the same `path:start-end` entries as a node) are shown on the
+panel of the node the link leaves. In a diagram traced from code every link should cite
+the code that makes the connection, or say in `detail` why there is none.
 
 `fromSide`, `toSide` and `via` exist for a route the engine gets wrong. Reach for them after
 a geometry failure, not before.
@@ -93,13 +89,18 @@ and the controls.
 - **`nodes`** is the list of node ids to light. `["*"]` lights everything — good for an
   opening overview.
 - **`links`** is the list of link ids to light and animate.
-- **`lede`** is two or three sentences. Say what happens and *why it is that way* — the
-  mechanism a reader cannot infer from the boxes. About 420 characters fit; the geometry
-  gate measures the real number and tells you if you are over.
-- **`notes`** are up to six chips, each a `k` (a library, a component, a decision) and a `v`
-  (what it is for, one or two lines). This is where a reader learns what a thing actually
-  does. Write them as claims, not labels: "Holds no state of its own, so any instance can
-  answer any request" beats "the API server".
+- **`lede`** is the explanation, up to seven lines (about 700 characters). Give the reader
+  three things the boxes cannot: **what happens** in this step, **why it is built that
+  way**, and **what would go wrong otherwise**. "The API writes the order before it answers"
+  is the first; "inside the same transaction as the stock change, so a crash between them
+  cannot sell an item twice" is the second and third, and it is the part a reader keeps.
+  The geometry gate measures what fits.
+- **`notes`** are up to six chips beside the lede. `k` names the point, `v` makes it in one
+  or two lines. A note must say something neither the boxes nor the lede already say — a
+  number, a limit, a reason, a consequence, a failure mode. "Retries are keyed on the order
+  id, so a timeout cannot charge twice" earns its place; "Payments: authorises and
+  captures" beside a box labelled exactly that does not. The gate warns about a note that
+  repeats the lede. Two good notes beat six that restate.
 
 A good walkthrough opens with one overview step, then follows one path end to end. Ten or
 eleven steps is a comfortable talk; past twenty it is two diagrams.
@@ -115,23 +116,17 @@ apart from a failed one. Supply your own only when you want to say something the
 
 ## Limits worth knowing before you write
 
-**Columns and the canvas.** The tool lays out once, looks at how wide the columns actually
-came out, and widens the page itself (up to 2200px) if they are under about 142px or any
-label is clipped — a narrower column wraps the sublabel, and a wrapped sublabel in a narrow
-column is what turns a node into a square. It grows the page's height the same way (up to
-1600px) when the rails need more room than the canvas has. Boxes are then held to at least
-2:1 landscape wherever the text allows it.
+**The page sizes itself.** It widens (up to 2200px) when columns come out under about 142px
+or a label is clipped, and grows taller (up to 1600px) when rails, lines or labels need the
+room, so you never compute a width or height. A page much wider than 1600 scales down on a
+screen, though: past about eight columns, shorter sublabels or fewer columns beat a wider
+canvas.
 
-Columns and rails sit 40px apart: room for up to three links to pass between them, 6px from
-each other and 11px clear of the boxes. Links are routed one at a time, each taking a lane
-the earlier ones left free, so two unrelated links do not ride one track. A link closer
-than 10px to a box it does not connect fails the geometry gate, because at that distance it
-is drawn as touching the box; so does a link sharing a track with an unrelated one, because
-the two then read as a single line.
-
-So you do not have to compute a width or a height. But a page much wider than 1600 scales down further
-to fit a screen, so if you find yourself past about eight columns, the cheaper fix is usually
-shorter sublabels or fewer columns rather than a wider canvas.
+**What the geometry gate measures.** Columns and rails sit 40px apart, room for three links
+side by side. It fails a link within 10px alongside a box it does not connect (drawn, that
+reads as touching), two links with no box in common on one track (they read as one line),
+and a drawn label more than 48px from its own line, nearer another line, or printed across
+another line, another label or a box's text.
 
 `label` 40 characters, `sublabel` 64, link `label` 28, layer `name` 24, step `title` 60,
 `lede` 440, note `k` 40 and `v` 180. Eighty nodes, 160 links, ten layers, 24 steps. These

@@ -21,7 +21,7 @@ const CLIENT_FILES = ['core.js', 'detail.js', 'export.js'];
 
 /** Caption geometry, stated once here and used by both the DOM and the export. */
 export const CAPTION_LAYOUT = {
-  padX: 30, padY: 26, leftW: 540, gap: 32, chipGap: 10, ledeLines: 5,
+  padX: 30, padY: 26, leftW: 640, gap: 32, chipGap: 10, ledeLines: 7,
 };
 
 export function renderHtml(scene, options = {}) {

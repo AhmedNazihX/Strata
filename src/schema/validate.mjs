@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 import { Issue, validate as validateShape } from './kit.mjs';
 import { LAYERS_REQUIRED, LAYER_NOUN, SPECS, DIAGRAM_TYPES } from './docs.mjs';
 import { resolveSource } from '../check/sources.mjs';
+import { checkNoteContent } from './narration.mjs';
 import { citedCode, evidenceQuality, identifierCount, isProse } from '../check/evidence.mjs';
 
 export function validateDocument(doc, options = {}) {
@@ -35,6 +36,7 @@ export function validateDocument(doc, options = {}) {
   issues.push(...checkReferences(doc, type));
   issues.push(...checkDialect(doc, type));
   warnings.push(...checkAdvisory(doc, type));
+  warnings.push(...checkNoteContent(doc));
 
   if (options.repoRoot) {
     const evidence = checkSources(doc, options.repoRoot);

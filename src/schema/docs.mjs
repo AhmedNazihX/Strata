@@ -115,7 +115,7 @@ const note = obj({
 
 const step = obj({
   title: str({ min: 1, max: 60 }),
-  lede: str({ min: 1, max: 440, why: 'the caption column is 540px wide and five lines tall' }),
+  lede: str({ min: 1, max: 700, why: 'the caption column is 640px wide and seven lines tall' }),
   nodes: arr(str({ pattern: '^(\\*|[a-z0-9][a-z0-9_-]{0,47})$' }), { max: 64, describe: 'Node ids to light up, or ["*"] for all.' }),
   links: arr(ref('links'), { max: 64 }),
   notes: arr(note, { max: 6, why: 'the chip grid is two columns by three rows' }),

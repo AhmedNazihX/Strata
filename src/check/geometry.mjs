@@ -262,11 +262,13 @@ function checkLabels(scene) {
   const issues = [];
   const warnings = [];
   const placed = scene.links.filter((link) => link.labelAt);
+  // A label is optional, so one with nowhere to stand is left off rather than
+  // failing the build: failing only sent the author back to delete it by hand.
   for (const link of scene.links.filter((l) => l.label && !l.labelAt)) {
-    issues.push(new Issue(
+    warnings.push(new Issue(
       `links[${link.id}].label`,
-      `"${link.label}" has nowhere it reads as naming this line`,
-      'shorten or drop it; on a gate branch, leave it empty and the yes/no pill speaks for it',
+      `"${link.label}" was left off: no spot near the line reads as naming it`,
+      'shorten it to keep it, or move what it says into the link\'s detail',
     ));
   }
   for (const link of placed) {
