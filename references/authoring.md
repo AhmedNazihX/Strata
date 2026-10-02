@@ -94,8 +94,12 @@ eleven steps is a comfortable talk; past twenty it is two diagrams.
 
 ## legend
 
-An optional list of `{ label, note, accent }` printed above the caption. Use it when the
-accents carry meaning the layer names do not already give.
+An optional list of `{ label, note, accent, shape }` printed above the caption. `shape` is
+`box` or `pill` and should match how those nodes are drawn.
+
+**You rarely need to write one.** A lifecycle, or a workflow without lanes, generates its own
+from the kinds on the page — naming the entry, the working states, and telling a finished exit
+apart from a failed one. Supply your own only when you want to say something the kinds do not.
 
 ## Limits worth knowing before you write
 

@@ -124,6 +124,7 @@ const legendEntry = obj({
   label: str({ min: 1, max: 40 }),
   note: str({ max: 90 }),
   accent: enumOf(ACCENTS),
+  shape: enumOf(['box', 'pill'], { describe: 'The swatch shape, matching how those nodes are drawn.' }),
 }, { required: ['label'] });
 
 export function documentSpec(type) {

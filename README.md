@@ -48,16 +48,23 @@ script error in Safari — all of them fail the build rather than reaching a rea
 
 ## Install
 
-Clone it where your agent looks for skills:
+Clone it where your agent looks for skills — for your user:
 
 ```bash
 git clone https://github.com/AhmedNazihX/Strata.git ~/.claude/skills/strata
 ```
 
-Optionally put the command on your `PATH`:
+or scoped to one project, so it travels with the repo:
 
 ```bash
-ln -s ~/.claude/skills/strata/bin/strata.mjs ~/.local/bin/strata
+git clone https://github.com/AhmedNazihX/Strata.git .claude/skills/strata
+```
+
+Either works; the CLI resolves itself relative to the skill directory. Optionally put the
+command on your `PATH`:
+
+```bash
+ln -s "$PWD/bin/strata.mjs" ~/.local/bin/strata
 ```
 
 Node 18 or newer. **No dependencies.** The browser gate uses Playwright if it can find it —

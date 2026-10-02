@@ -31,14 +31,25 @@ export function anchor(rect, side) {
   }
 }
 
-/** Pick sides when the author did not. Vertical separation wins ties. */
+/**
+ * Pick sides when the author did not.
+ *
+ * On the axis where the boxes actually have a gap between them, not the axis
+ * where their centres happen to be furthest apart. Two boxes stacked in one
+ * column have centres 90px apart vertically and 0 apart horizontally, but if
+ * you only compare centres a wide box pair can still come out "horizontal" —
+ * and then the route leaves one side, doubles back through its own box and
+ * crosses both.
+ */
 export function autoSides(a, b) {
-  const dy = b.cy - a.cy;
-  const dx = b.cx - a.cx;
-  if (Math.abs(dy) >= Math.abs(dx)) {
-    return dy >= 0 ? ['bottom', 'top'] : ['top', 'bottom'];
-  }
-  return dx >= 0 ? ['right', 'left'] : ['left', 'right'];
+  const gapX = Math.max(b.x - a.right, a.x - b.right);
+  const gapY = Math.max(b.y - a.bottom, a.y - b.bottom);
+  const horizontal = gapX > 0 && gapY <= 0 ? true
+    : gapY > 0 && gapX <= 0 ? false
+      : Math.abs(b.cx - a.cx) > Math.abs(b.cy - a.cy);
+
+  if (horizontal) return b.cx >= a.cx ? ['right', 'left'] : ['left', 'right'];
+  return b.cy >= a.cy ? ['bottom', 'top'] : ['top', 'bottom'];
 }
 
 function overlaps1d(lo1, hi1, lo2, hi2) {
@@ -107,20 +118,30 @@ export function route(from, to, spec = {}, obstacles = []) {
   const [autoFrom, autoTo] = autoSides(from, to);
   const fromSide = spec.fromSide || autoFrom;
   const toSide = spec.toSide || autoTo;
-  const start = anchor(from, fromSide);
-  const end = anchor(to, toSide);
-
   if (Array.isArray(spec.via) && spec.via.length) {
-    const points = dedupe([start, ...spec.via.map((p) => [p[0], p[1]]), end]);
+    const points = dedupe([anchor(from, fromSide), ...spec.via.map((p) => [p[0], p[1]]), anchor(to, toSide)]);
     return { points, sides: [fromSide, toSide], clean: isClean(points, obstacles, skip) };
   }
 
-  const vertical = fromSide === 'top' || fromSide === 'bottom';
-  const points = vertical
-    ? routeVertical(start, end, from, to, obstacles, skip)
-    : routeHorizontal(start, end, from, to, obstacles, skip);
+  const attempt = (f, t) => {
+    const pts = (f === 'top' || f === 'bottom')
+      ? routeVertical(anchor(from, f), anchor(to, t), from, to, obstacles, skip)
+      : routeHorizontal(anchor(from, f), anchor(to, t), from, to, obstacles, skip);
+    return { points: pts, sides: [f, t], clean: isClean(pts, obstacles, skip) };
+  };
 
-  return { points, sides: [fromSide, toSide], clean: isClean(points, obstacles, skip) };
+  const first = attempt(fromSide, toSide);
+  // A side hint is a preference, not a licence to draw through a box. Explicit
+  // geometry (`via`) is the only hard override, and it returned above.
+  if (first.clean) return first;
+
+  // The chosen axis does not work here. The other one often does, and a clean
+  // route on the second axis beats a tidy-looking one that crosses a box.
+  const [altFrom, altTo] = fromSide === 'top' || fromSide === 'bottom'
+    ? (to.cx >= from.cx ? ['right', 'left'] : ['left', 'right'])
+    : (to.cy >= from.cy ? ['bottom', 'top'] : ['top', 'bottom']);
+  const second = attempt(altFrom, altTo);
+  return second.clean ? second : first;
 }
 
 function routeVertical(start, end, from, to, obstacles, skip) {
@@ -165,15 +186,38 @@ function routeHorizontal(start, end, from, to, obstacles, skip) {
   ]);
 }
 
-/** Every run clears every obstacle it is not attached to. */
+const ANCHOR_ALLOWANCE = 3;
+const OWN_BOX_INSET = 2;
+
+/**
+ * How far a segment runs inside a rectangle.
+ *
+ * An axis-aligned segment has zero extent on one axis, so an intersection test
+ * that demands overlap on both will never fire for the lines this router draws.
+ * That is how routes crossing their own boxes went unnoticed.
+ */
+export function runInside(ax, ay, bx, by, r, pad = 0) {
+  const overlapX = Math.min(Math.max(ax, bx), r.right - pad) - Math.max(Math.min(ax, bx), r.x + pad);
+  const overlapY = Math.min(Math.max(ay, by), r.bottom - pad) - Math.max(Math.min(ay, by), r.y + pad);
+  if (overlapX < 0 || overlapY < 0) return 0;
+  return Math.max(overlapX, overlapY);
+}
+
+/**
+ * Every run clears every box — including the two it connects, which a link may
+ * touch at its anchor but must never travel through.
+ */
 export function isClean(points, obstacles, skip = []) {
   for (let i = 0; i < points.length - 1; i += 1) {
     const [ax, ay] = points[i];
     const [bx, by] = points[i + 1];
-    const ok = Math.abs(ax - bx) < 0.5
-      ? clearX(ax, ay, by, obstacles, GEO.linkGap - 2, skip)
-      : clearY(ay, ax, bx, obstacles, GEO.linkGap - 2, skip);
-    if (!ok) return false;
+    for (const rect of obstacles) {
+      const own = skip.includes(rect.id);
+      // A link legitimately runs *along* its own edge on the way out, so the
+      // own-box test is strictly-inside; other boxes keep their clearance band.
+      const run = runInside(ax, ay, bx, by, rect, own ? OWN_BOX_INSET : -(GEO.linkGap - 2));
+      if (run > (own ? ANCHOR_ALLOWANCE : 0)) return false;
+    }
   }
   return true;
 }

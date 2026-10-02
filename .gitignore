@@ -2,3 +2,4 @@ node_modules/
 .strata/
 *.log
 .DS_Store
+tests/

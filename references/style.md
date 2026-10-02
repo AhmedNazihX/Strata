@@ -59,6 +59,17 @@ A cited node's panel shows the real code, cited lines on a green band with a gre
 the left edge. Green appears nowhere else in the system, so it means exactly one thing:
 *this is the part of the source the claim rests on*.
 
+## Saying what the colours mean
+
+A diagram that encodes meaning in colour and shape has to explain itself on the page. Where
+there are no layers to colour by — a lifecycle, a workflow without lanes — the diagram writes
+its own legend from the kinds actually present: entry, working, waiting, **exit · finished**
+and **exit · failed**. Each swatch is the node in miniature, same border and corners, so
+"rounded ends mark an exit" is shown rather than asserted.
+
+An author-supplied `legend` always wins; a layered diagram gets none, because the rail labels
+already name what the colours mean.
+
 ## Two rules the engines force on us
 
 Both were learned by shipping a diagram that looked right in Chrome and arrived in Safari

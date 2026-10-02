@@ -98,6 +98,27 @@ export const GEO = {
   pulseSpeed: 1.7,  // seconds for one pulse to traverse a link
 };
 
+/**
+ * Colour by meaning when there is no layer to colour by.
+ *
+ * Where a document has layers, an accent says which tier a node is in. Where it
+ * has none — a lifecycle, a workflow without lanes — falling back to the ramp
+ * colours nodes by declaration order, which encodes nothing and reads as noise.
+ * These map the one distinction that does carry meaning in those dialects.
+ */
+export const KIND_ACCENTS = {
+  lifecycle: {
+    initial: 'blue', active: 'teal', waiting: 'gold', terminal: 'green', error: 'rose',
+  },
+  workflow: {
+    start: 'blue', action: 'teal', gate: 'gold', parallel: 'violet', wait: 'cyan', end: 'green',
+  },
+};
+
+export function kindAccent(type, kind) {
+  return (KIND_ACCENTS[type] || {})[kind] || null;
+}
+
 /** Resolve a layer accent name to the ramp, tolerating an explicit choice. */
 export function accentFor(index, explicit) {
   if (explicit && ACCENT_RAMP.includes(explicit)) return explicit;

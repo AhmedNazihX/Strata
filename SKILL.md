@@ -12,11 +12,19 @@ A diagram is a claim about how something works. This skill makes that claim chec
 you write typed JSON, a CLI computes the layout, and four gates run before anything is
 called finished. **You never write HTML and you never place coordinates.**
 
-Run every command with the skill's absolute path:
+## Running it
+
+The CLI lives beside this file, at `bin/strata.mjs`. **Resolve it relative to this skill's
+own directory** — it works the same whether the skill is installed for your user
+(`~/.claude/skills/strata/`) or inside a project (`<repo>/.claude/skills/strata/`):
 
 ```
-node ~/.claude/skills/strata/bin/strata.mjs <command> ...
+node <this-skill-dir>/bin/strata.mjs <command> ...
 ```
+
+If `strata` is on the PATH, use that instead. `strata doctor` confirms which install is
+answering. Every example below writes `strata`; substitute the path form when it is not on
+the PATH.
 
 ## The fast path
 
@@ -32,7 +40,7 @@ node ~/.claude/skills/strata/bin/strata.mjs <command> ...
 4. **Run one command.** Keep the candidate unchanged while it runs.
 
    ```
-   node ~/.claude/skills/strata/bin/strata.mjs finalize candidate.json
+   strata finalize candidate.json
    ```
 
    For a diagram that describes real code, include the evidence on the first draft:

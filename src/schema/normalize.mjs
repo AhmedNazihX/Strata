@@ -3,7 +3,8 @@
  * engine downstream sees a complete document and never has to guess.
  */
 
-import { GEO, accentFor } from '../render/tokens.mjs';
+import { GEO, accentFor, kindAccent } from '../render/tokens.mjs';
+import { autoLegend } from '../render/legend.mjs';
 import { LINK_VARIANTS, NODE_KINDS } from './docs.mjs';
 
 const DEFAULT_STEP_SECONDS = 8;
@@ -52,7 +53,7 @@ export function normalize(input) {
       kind: node.kind || NODE_KINDS[type][0],
       col,
       span,
-      accent: layer ? layer.accent : accentFor(index),
+      accent: layer ? layer.accent : (kindAccent(type, node.kind || NODE_KINDS[type][0]) ?? accentFor(index)),
       layerIndex: layer ? layer.index : 0,
     };
   });
@@ -74,10 +75,12 @@ export function normalize(input) {
     notes: step.notes || [],
   }));
 
-  doc.legend = (doc.legend || []).map((entry, index) => ({
+  const legend = (doc.legend || []).length ? doc.legend : autoLegend(doc);
+  doc.legend = legend.map((entry, index) => ({
     note: '',
+    shape: 'box',
     ...entry,
-    accent: accentFor(index, entry.accent),
+    accent: entry.accent || accentFor(index),
   }));
 
   return doc;

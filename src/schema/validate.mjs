@@ -8,7 +8,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Issue, validate as validateShape } from './kit.mjs';
 import { LAYERS_REQUIRED, LAYER_NOUN, SPECS, DIAGRAM_TYPES } from './docs.mjs';
-import { evidenceQuality } from '../check/evidence.mjs';
+import { citedCode, evidenceQuality, identifierCount } from '../check/evidence.mjs';
 
 export function validateDocument(doc, options = {}) {
   const issues = [];
@@ -194,6 +194,7 @@ function hasSources(doc) {
    shape of this is `file.py:1-30`, which lands on the module docstring every
    time. */
 const PROSE_WARNING_RATIO = 0.4;
+const MIN_IDENTIFIERS = 3;
 
 function checkSources(doc, repoRoot) {
   const issues = [];
@@ -235,6 +236,12 @@ function checkSources(doc, repoRoot) {
           path,
           `${raw} is ${quality.comment} lines of comment and no code`,
           'cite the implementation the claim rests on, not the docstring about it',
+        ));
+      } else if (identifierCount(citedCode(text, match[1], start, end)) < MIN_IDENTIFIERS) {
+        warnings.push(new Issue(
+          path,
+          `${raw} names almost nothing`,
+          'a range of bare control flow proves nothing happens there — cite the lines that do the work',
         ));
       } else if (quality.ratio < PROSE_WARNING_RATIO) {
         warnings.push(new Issue(

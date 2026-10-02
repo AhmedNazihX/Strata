@@ -12,7 +12,6 @@
 
 import { GEO } from '../render/tokens.mjs';
 import { columnGrid, computeFrame, railBands, RAIL_MAX_HEIGHT } from './frame.mjs';
-import { ring } from './marks.mjs';
 import { rectOf, route } from './route.mjs';
 import { finishScene } from './scene.mjs';
 
@@ -22,9 +21,8 @@ const BOX_MIN_W = 96;     // a column narrower than this just touches its neighb
 const BOX_MAX_W = 208;    // wider than this and a state reads as a region
 const BOX_INSET = 10;     // breathing room inside the column slot
 const ROW_GAP = 28;       // vertical gap between two states of one rank
-const RING_PAD = 7;       // inner ring's clearance around the box
-const RING_STEP = 5;      // gap between the two rings of a double
-const RING_OUT = RING_PAD + RING_STEP;
+const RING_PAD = 7;       // breathing space kept around a box
+const RING_OUT = RING_PAD + 5;
 const SWEEP_BAND = 54;    // canvas held back, top and bottom, for back-edges
 const LANE_GAP = 18;      // first sweep lane's clearance from the boxes
 const LANE_STEP = 14;     // spacing between sweep lanes
@@ -33,9 +31,7 @@ const BAND_MIN_H = 58, BAND_MAX_H = RAIL_MAX_HEIGHT;
 
 const ABOVE_KINDS = new Set(['waiting']);
 const BELOW_KINDS = new Set(['error']);
-const SWEEP_VARIANTS = new Set(['retry', 'timeout', 'failure']);
-const SINGLE_RING_KINDS = new Set(['initial']);
-const DOUBLE_RING_KINDS = new Set(['terminal', 'error']);
+const EXIT_KINDS = new Set(['terminal', 'error']);
 
 export function layout(doc) {
   const frame = computeFrame(doc);
@@ -59,7 +55,7 @@ export function layout(doc) {
     byId: new Map(nodes.map((n) => [n.id, n])), obstacles: nodes.map(rectOf) };
   const links = doc.links.map((link) => ({ ...link, ...hintFor(link, scope) }));
 
-  return finishScene({ doc: { ...doc, links }, frame, layers: bands, nodes, marks: nodes.flatMap(ringsFor) });
+  return finishScene({ doc: { ...doc, links }, frame, layers: bands, nodes: nodes.map(withExitShape), marks: [] });
 }
 
 /**
@@ -142,12 +138,15 @@ function stackRank(members, field) {
   return rows.map((row) => ({ ...row, y: row.y + shift }));
 }
 
-/** Entry wears one ring, every exit wears two. */
-function ringsFor(node) {
-  const at = (p) => ring(node.x + node.w / 2, node.y + node.h / 2, node.w / 2 + p, node.h / 2 + p, node.accent);
-  if (SINGLE_RING_KINDS.has(node.kind)) return [at(RING_PAD)];
-  if (DOUBLE_RING_KINDS.has(node.kind)) return [at(RING_PAD), at(RING_OUT)];
-  return [];
+/**
+ * An exit is a shape, not a decoration.
+ *
+ * Rings around a box add two more outlines to a page that already has a border,
+ * a glow and a colour — they read as clutter rather than as meaning. A fully
+ * rounded box says "this is where it stops" on its own, and costs nothing.
+ */
+function withExitShape(node) {
+  return EXIT_KINDS.has(node.kind) ? { ...node, corner: node.h / 2 } : node;
 }
 
 /**
@@ -159,7 +158,11 @@ function hintFor(link, { nodes, byId, obstacles, ranks, grid, frame, cols }) {
   const from = byId.get(link.from);
   const to = byId.get(link.to);
   if (!from || !to) return {};
-  const sweeps = SWEEP_VARIANTS.has(link.variant) || ranks.get(to.id) <= ranks.get(from.id);
+  // Only a genuine back-edge sweeps. A `failure` that moves forward is still a
+  // forward edge, and sending it out of the bottom makes it loop around the
+  // target and arrive from the far side; a same-rank link is two stacked boxes
+  // that should simply join.
+  const sweeps = ranks.get(to.id) < ranks.get(from.id);
   if (!sweeps) return firstClean(from, to, obstacles, [{ fromSide: 'right', toSide: 'left' }]) || {};
 
   const side = to.y + to.h / 2 < from.y + from.h / 2 ? 'top' : 'bottom';

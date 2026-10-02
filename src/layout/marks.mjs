@@ -16,10 +16,6 @@ export const divider = (x1, y, x2, label = '') => ({ type: 'divider', x1, y, x2,
 export const bandLabel = (x, y, w, text, note, accent) =>
   ({ type: 'band-label', x, y, w, text, note, accent });
 
-/** A ring around a node: entry and exit states wear one. */
-export const ring = (cx, cy, rx, ry, accent, style = 'solid') =>
-  ({ type: 'ring', cx, cy, rx, ry, accent, style });
-
 /** A labelled bracket grouping a run of nodes, for parallel branches. */
 export const bracket = (x, y, w, h, label, accent) =>
   ({ type: 'bracket', x, y, w, h, label, accent });
@@ -27,4 +23,4 @@ export const bracket = (x, y, w, h, label, accent) =>
 /** A small pill of text floating free, for a condition or a tick on an axis. */
 export const pill = (x, y, text, accent) => ({ type: 'pill', x, y, text, accent });
 
-export const MARK_TYPES = ['lifeline', 'divider', 'band-label', 'ring', 'bracket', 'pill'];
+export const MARK_TYPES = ['lifeline', 'divider', 'band-label', 'bracket', 'pill'];

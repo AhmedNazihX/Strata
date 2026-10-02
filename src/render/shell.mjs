@@ -89,7 +89,10 @@ function legend(scene) {
   const { frame } = scene;
   const y = frame.caption ? frame.caption.y - 26 : frame.height - 34;
   const items = scene.legend.map((entry) =>
-    `<span class="tl-legend-item" style="--layer:var(--a-${entry.accent})"><i></i>${escapeXml(entry.label)}${entry.note ? ` — ${escapeXml(entry.note)}` : ''}</span>`).join('');
+    `<span class="tl-legend-item" style="--layer:var(--a-${entry.accent})">`
+    + `<i class="${entry.shape === 'pill' ? 'pill' : 'box'}"></i>`
+    + `<b>${escapeXml(entry.label)}</b>`
+    + `${entry.note ? ` — ${escapeXml(entry.note)}` : ''}</span>`).join('');
   return `<div class="tl-legend" style="position:absolute;left:${frame.margin + 14}px;top:${y}px;width:${frame.width - (frame.margin + 14) * 2}px">${items}</div>`;
 }
 

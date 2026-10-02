@@ -108,6 +108,11 @@ function splitNote(note) {
   return lines.filter(Boolean);
 }
 
+/* A node may ask for its own corner radius; a lifecycle exit is a pill. */
+function corner(n) {
+  return Number.isFinite(n.corner) ? n.corner : GEO.corner;
+}
+
 function node(n) {
   const labelX = round(n.x + BOX_PAD_X);
   const texts = [];
@@ -129,9 +134,9 @@ function node(n) {
     detail ? ' tabindex="0" role="button"' : '',
     ` aria-label="${escapeXml(n.label)}${n.sublabel ? `, ${escapeXml(n.sublabel)}` : ''}">`,
     `<rect class="node-box" x="${round(n.x)}" y="${round(n.y)}"`
-      + ` width="${round(n.w)}" height="${round(n.h)}" rx="${GEO.corner}"/>`,
+      + ` width="${round(n.w)}" height="${round(n.h)}" rx="${round(corner(n))}"/>`,
     `<rect class="node-ring" x="${round(n.x)}" y="${round(n.y)}"`
-      + ` width="${round(n.w)}" height="${round(n.h)}" rx="${GEO.corner}"`
+      + ` width="${round(n.w)}" height="${round(n.h)}" rx="${round(corner(n))}"`
       + ` filter="url(#g-${escapeXml(n.accent)})"/>`,
     texts.join(''),
     '</g>',
@@ -198,8 +203,6 @@ function mark(m) {
       return `<line class="mark-lifeline" x1="${round(m.x)}" y1="${round(m.y1)}" x2="${round(m.x)}" y2="${round(m.y2)}"${style}/>`;
     case 'divider':
       return `<line class="mark-divider" x1="${round(m.x1)}" y1="${round(m.y)}" x2="${round(m.x2)}" y2="${round(m.y)}"/>`;
-    case 'ring':
-      return `<ellipse class="mark-ring${m.style === 'dashed' ? ' dashed' : ''}" cx="${round(m.cx)}" cy="${round(m.cy)}" rx="${round(m.rx)}" ry="${round(m.ry)}"${style}/>`;
     case 'bracket':
       return `<rect class="mark-bracket" x="${round(m.x)}" y="${round(m.y)}" width="${round(m.w)}" height="${round(m.h)}" rx="10"${style}/>`
         + (m.label ? `<text class="mark-band-note" x="${round(m.x + m.w / 2)}" y="${round(m.y - 6)}">${escapeXml(m.label)}</text>` : '');

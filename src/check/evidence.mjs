@@ -83,3 +83,37 @@ export function evidenceQuality(text, path, start, end) {
   const total = comment + code;
   return { total, code, comment, ratio: total ? code / total : 1 };
 }
+
+/* Words that carry no evidence on their own: a citation made only of these is a
+   fragment of control flow, not a demonstration that anything happens. */
+const STRUCTURAL = new Set([
+  'try', 'except', 'finally', 'else', 'elif', 'if', 'return', 'raise', 'for', 'while',
+  'with', 'async', 'await', 'pass', 'break', 'continue', 'const', 'let', 'var',
+  'function', 'class', 'def', 'import', 'from', 'in', 'not', 'and', 'or', 'is',
+  'none', 'null', 'true', 'false', 'self', 'this', 'new', 'case', 'switch', 'do',
+  'then', 'end', 'catch', 'throw', 'yield', 'export', 'default',
+]);
+
+/**
+ * How many distinct names a cited range mentions.
+ *
+ * `return 0` and `try:` are code by any classifier and still prove nothing. A
+ * citation worth opening names something — a function, a variable, a call.
+ */
+export function identifierCount(text) {
+  const seen = new Set();
+  for (const match of String(text).matchAll(/[A-Za-z_][A-Za-z0-9_]+/g)) {
+    const word = match[0].toLowerCase();
+    if (!STRUCTURAL.has(word)) seen.add(word);
+  }
+  return seen.size;
+}
+
+/** The cited lines only, with comments and blanks dropped. */
+export function citedCode(text, path, start, end) {
+  const kinds = classifyLines(text, path);
+  return text.split(/\r?\n/)
+    .slice(start - 1, end)
+    .filter((_, i) => kinds[start - 1 + i] === 'code')
+    .join('\n');
+}

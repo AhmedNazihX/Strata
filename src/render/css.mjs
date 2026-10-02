@@ -147,8 +147,6 @@ a:hover { color: var(--flow-bright); }
 
 .mark-lifeline { stroke: var(--layer); stroke-width: 1.2; stroke-dasharray: 3 6; opacity: .45; }
 .mark-divider { stroke: var(--stroke); stroke-width: 1; }
-.mark-ring { fill: none; stroke: var(--layer); stroke-width: 1.4; opacity: .7; }
-.mark-ring.dashed { stroke-dasharray: 4 4; }
 .mark-bracket { fill: none; stroke: var(--stroke-strong); stroke-width: 1.2; }
 .mark-band-name {
   font-family: ${FONTS.mono}; font-size: ${TYPE.railName}px; font-weight: 500;
@@ -263,7 +261,15 @@ a:hover { color: var(--flow-bright); }
 /* ---------- legend ---------- */
 .tl-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
 .tl-legend-item { display: flex; align-items: center; gap: 7px; font-size: 10.5px; color: var(--muted); }
-.tl-legend-item i { width: 9px; height: 9px; border-radius: 3px; background: var(--layer); display: block; }
+.tl-legend-item b { font-weight: 500; color: var(--text); }
+/* The swatch is the node in miniature: same border, same fill, same corners, so
+   "rounded ends mean an exit" is shown rather than asserted. */
+.tl-legend-item i {
+  display: block; height: 13px; border: 1px solid var(--layer);
+  background: color-mix(in srgb, var(--layer) 16%, transparent);
+}
+.tl-legend-item i.box { width: 20px; border-radius: 4px; }
+.tl-legend-item i.pill { width: 24px; border-radius: 999px; }
 
 /* ---------- toolbar ---------- */
 .tl-toolbar {
