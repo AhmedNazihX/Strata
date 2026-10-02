@@ -9,7 +9,7 @@
 
 import { GEO } from '../render/tokens.mjs';
 
-const CORRIDOR_STEP = 6;
+const CORRIDOR_STEP = 1;
 const CORRIDOR_LIMIT = 420;
 const CORNER_RADIUS = 9;
 
@@ -102,23 +102,59 @@ export function clearY(y, xA, xB, obstacles, pad = GEO.linkGap, skip = []) {
     overlaps1d(lo, hi, r.x - pad, r.right + pad));
 }
 
-/** Slide outward from `x` until the vertical run is clear. Null when nothing is. */
-export function nearestClearX(x, yA, yB, obstacles, skip = []) {
-  if (clearX(x, yA, yB, obstacles, GEO.linkGap, skip)) return x;
-  for (let d = CORRIDOR_STEP; d <= CORRIDOR_LIMIT; d += CORRIDOR_STEP) {
-    if (clearX(x - d, yA, yB, obstacles, GEO.linkGap, skip)) return x - d;
-    if (clearX(x + d, yA, yB, obstacles, GEO.linkGap, skip)) return x + d;
+/**
+ * Is a run at `at` (an x for a vertical run, a y for a horizontal one) clear of
+ * every line already drawn? `lines` holds only the lines this link may not
+ * merge with — those sharing no box with it. Two such lines on one track read
+ * as one line with two meanings.
+ */
+function trackFree(vertical, at, lo, hi, lines) {
+  return !lines.some((seg) => seg.vertical === vertical
+    && Math.abs(seg.at - at) < GEO.lineGap
+    && overlaps1d(Math.min(lo, hi), Math.max(lo, hi), seg.lo, seg.hi));
+}
+
+/**
+ * Slide outward from `x` until the vertical run clears every box and every
+ * taken track. When the gutter has no free track left, a shared one is
+ * better than none, so it falls back to boxes alone. Null when nothing is.
+ */
+export function nearestClearX(x, yA, yB, obstacles, skip = [], lines = []) {
+  const ok = (cx, withLines) => clearX(cx, yA, yB, obstacles, GEO.linkGap, skip)
+    && (!withLines || trackFree(true, cx, yA, yB, lines));
+  for (const withLines of lines.length ? [true, false] : [false]) {
+    if (ok(x, withLines)) return x;
+    for (let d = CORRIDOR_STEP; d <= CORRIDOR_LIMIT; d += CORRIDOR_STEP) {
+      if (ok(x - d, withLines)) return x - d;
+      if (ok(x + d, withLines)) return x + d;
+    }
   }
   return null;
 }
 
-export function nearestClearY(y, xA, xB, obstacles, skip = []) {
-  if (clearY(y, xA, xB, obstacles, GEO.linkGap, skip)) return y;
-  for (let d = CORRIDOR_STEP; d <= CORRIDOR_LIMIT; d += CORRIDOR_STEP) {
-    if (clearY(y - d, xA, xB, obstacles, GEO.linkGap, skip)) return y - d;
-    if (clearY(y + d, xA, xB, obstacles, GEO.linkGap, skip)) return y + d;
+export function nearestClearY(y, xA, xB, obstacles, skip = [], lines = []) {
+  const ok = (cy, withLines) => clearY(cy, xA, xB, obstacles, GEO.linkGap, skip)
+    && (!withLines || trackFree(false, cy, xA, xB, lines));
+  for (const withLines of lines.length ? [true, false] : [false]) {
+    if (ok(y, withLines)) return y;
+    for (let d = CORRIDOR_STEP; d <= CORRIDOR_LIMIT; d += CORRIDOR_STEP) {
+      if (ok(y - d, withLines)) return y - d;
+      if (ok(y + d, withLines)) return y + d;
+    }
   }
   return null;
+}
+
+/** A routed polyline as track segments, for the links routed after it. */
+export function tracksOf(points, ends) {
+  const out = [];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const [ax, ay] = points[i];
+    const [bx, by] = points[i + 1];
+    if (Math.abs(ax - bx) < 0.5) out.push({ vertical: true, at: ax, lo: Math.min(ay, by), hi: Math.max(ay, by), ends });
+    else if (Math.abs(ay - by) < 0.5) out.push({ vertical: false, at: ay, lo: Math.min(ax, bx), hi: Math.max(ax, bx), ends });
+  }
+  return out;
 }
 
 function dedupe(points) {
@@ -139,20 +175,30 @@ function dedupe(points) {
  * @param {object[]} obstacles  every node rect on the page
  * @returns {{points: number[][], sides: string[], clean: boolean}}
  */
-export function route(from, to, spec = {}, obstacles = []) {
+export function route(from, to, spec = {}, obstacles = [], tracks = []) {
   const skip = [from.id, to.id];
+  const lines = tracks.filter((seg) => !seg.ends.some((id) => id === from.id || id === to.id));
   const [autoFrom, autoTo] = autoSides(from, to);
   const fromSide = spec.fromSide || autoFrom;
   const toSide = spec.toSide || autoTo;
   if (Array.isArray(spec.via) && spec.via.length) {
-    const points = dedupe([anchor(from, fromSide, to), ...spec.via.map((p) => [p[0], p[1]]), anchor(to, toSide, from)]);
+    // Each end aims at its own first bend, not at the far box: the far box
+    // can be anywhere, and anchoring toward it put a slanted stroke between
+    // the anchor and a via point that was laid out from the box's centre.
+    const via = spec.via.map((p) => [p[0], p[1]]);
+    const toward = ([x, y]) => ({ cx: x, cy: y });
+    const points = dedupe([
+      anchor(from, fromSide, toward(via[0])),
+      ...via,
+      anchor(to, toSide, toward(via[via.length - 1])),
+    ]);
     return { points, sides: [fromSide, toSide], clean: isClean(points, obstacles, skip) };
   }
 
   const attempt = (f, t) => {
     const pts = (f === 'top' || f === 'bottom')
-      ? routeVertical(anchor(from, f, to), anchor(to, t, from), from, to, obstacles, skip)
-      : routeHorizontal(anchor(from, f, to), anchor(to, t, from), from, to, obstacles, skip);
+      ? routeVertical(anchor(from, f, to), anchor(to, t, from), obstacles, skip, lines)
+      : routeHorizontal(anchor(from, f, to), anchor(to, t, from), obstacles, skip, lines);
     return { points: pts, sides: [f, t], clean: isClean(pts, obstacles, skip) };
   };
 
@@ -170,18 +216,19 @@ export function route(from, to, spec = {}, obstacles = []) {
   return second.clean ? second : first;
 }
 
-function routeVertical(start, end, from, to, obstacles, skip) {
+function routeVertical(start, end, obstacles, skip, lines) {
   const [x1, y1] = start;
   const [x2, y2] = end;
 
-  if (Math.abs(x1 - x2) < 1 && clearX(x1, y1, y2, obstacles, GEO.linkGap, skip)) {
+  if (Math.abs(x1 - x2) < 1 && clearX(x1, y1, y2, obstacles, GEO.linkGap, skip)
+    && trackFree(true, x1, y1, y2, lines)) {
     return [start, end];
   }
 
   const midSeed = (y1 + y2) / 2;
-  const midY = nearestClearY(midSeed, x1, x2, obstacles, skip) ?? midSeed;
-  const legA = nearestClearX(x1, y1, midY, obstacles, skip) ?? x1;
-  const legB = nearestClearX(x2, midY, y2, obstacles, skip) ?? x2;
+  const midY = nearestClearY(midSeed, x1, x2, obstacles, skip, lines) ?? midSeed;
+  const legA = nearestClearX(x1, y1, midY, obstacles, skip, lines) ?? x1;
+  const legB = nearestClearX(x2, midY, y2, obstacles, skip, lines) ?? x2;
 
   return dedupe([
     start,
@@ -191,18 +238,19 @@ function routeVertical(start, end, from, to, obstacles, skip) {
   ]);
 }
 
-function routeHorizontal(start, end, from, to, obstacles, skip) {
+function routeHorizontal(start, end, obstacles, skip, lines) {
   const [x1, y1] = start;
   const [x2, y2] = end;
 
-  if (Math.abs(y1 - y2) < 1 && clearY(y1, x1, x2, obstacles, GEO.linkGap, skip)) {
+  if (Math.abs(y1 - y2) < 1 && clearY(y1, x1, x2, obstacles, GEO.linkGap, skip)
+    && trackFree(false, y1, x1, x2, lines)) {
     return [start, end];
   }
 
   const midSeed = (x1 + x2) / 2;
-  const midX = nearestClearX(midSeed, y1, y2, obstacles, skip) ?? midSeed;
-  const legA = nearestClearY(y1, x1, midX, obstacles, skip) ?? y1;
-  const legB = nearestClearY(y2, midX, x2, obstacles, skip) ?? y2;
+  const midX = nearestClearX(midSeed, y1, y2, obstacles, skip, lines) ?? midSeed;
+  const legA = nearestClearY(y1, x1, midX, obstacles, skip, lines) ?? y1;
+  const legB = nearestClearY(y2, midX, x2, obstacles, skip, lines) ?? y2;
 
   return dedupe([
     start,

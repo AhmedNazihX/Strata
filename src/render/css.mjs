@@ -214,6 +214,7 @@ a:hover { color: var(--flow-bright); }
 .tl-detail.wide { max-width: 660px; }
 
 .tl-sources { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.tl-link { margin: 14px 0 0; font-family: ${FONTS.mono}; font-size: 11.5px; color: var(--muted); }
 .tl-src {
   font-family: ${FONTS.mono}; font-size: 10.5px; text-align: left; width: 100%;
   color: var(--cite); background: color-mix(in srgb, var(--cite) 9%, transparent);

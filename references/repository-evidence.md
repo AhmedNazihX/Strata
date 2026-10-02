@@ -14,9 +14,23 @@ is worse than none, because it is confidently wrong and it looks the same.
 3. **Draw only what you opened.** If the diagram says the API writes to Redis, you should be
    able to name the file. A dependency in `package.json` is evidence the library is
    installed, not evidence of where it is used.
-4. **Cite as you go**, with `sources` on the nodes that carry a non-obvious claim.
-5. **Run `finalize` with `--repo-root`.** Every citation is checked: the file exists, and
+4. **Sweep each box's outbound dependencies.** "Draw only what you opened" stops invented
+   arrows; it does nothing about missing ones, and a missing arrow is the commoner error.
+   For every node, list what its code actually reaches — database reads and writes,
+   storage, every HTTP client, every model call, every tool it binds — by searching its
+   module and the functions it calls, not by remembering. Each one becomes a link, or a
+   line in that node's `detail` saying why it is left out. A node whose code calls a
+   model and has no link to the model provider is the shape this step exists to catch.
+5. **Cite as you go**, with `sources` on the nodes that carry a non-obvious claim **and on
+   every link** — the line that makes the call, the query that writes the row. A link is a
+   claim too, and `--repo-root` warns about every link that cites nothing.
+6. **Run `finalize` with `--repo-root`.** Every citation is checked: the file exists, and
    the line range is inside it. A citation that does not resolve fails the run.
+7. **Have it reviewed in a fresh context.** The gates prove the diagram is legible and its
+   citations resolve; they cannot prove it is complete or that a label is true. Hand the
+   candidate and the repository to a reviewer agent that did not write it, asking it to
+   check every node, link and label against the code and to look for connections the code
+   makes that the diagram does not show. Fix what it finds and run `finalize` again.
 
 ## The `sources` format
 
@@ -24,7 +38,10 @@ is worse than none, because it is confidently wrong and it looks the same.
 "sources": ["src/agent/graph.py:510-551", "src/routers/bids.py:88", "infra/compose.yaml"]
 ```
 
-Repository-relative, with an optional `:line` or `:start-end`.
+Repository-relative, with an optional `:line` or `:start-end`. Nodes and links take the
+same field. A link's citations are shown on the panel of the node it leaves, under the
+name of the node it reaches, so the reader opens the box to see the evidence for its
+arrows.
 
 With `--repo-root`, the cited lines are **read at render time and embedded in the HTML**.
 Clicking a citation in the viewer opens the real code with the cited range marked in green
@@ -41,9 +58,15 @@ Cite the definition the claim rests on — `def upload_document` at 316-354, not
 `documents.py:1-30`. Where a function carries a long docstring of its own, cite the body:
 the four lines that build the `Send` list, not the fifteen explaining why.
 
-The schema gate **fails** a range containing no code at all, and warns when under 40% of the
-non-blank lines are code. Both are measured per language, so a comment is whatever that
-language says a comment is.
+The schema gate **fails** a range containing no code at all — imports do not count as code
+— and a range that starts or ends inside a docstring or block comment, which is what a
+range one line off looks like. It refuses documentation files outright, and warns when
+under 40% of the non-blank lines are code. All of it is measured per language, so a
+comment is whatever that language says a comment is.
+
+Citations are embedded in the page, so they must resolve inside the checkout (symlinks
+included), and never name a file that holds secrets by its kind (`.env`, keys,
+certificates).
 
 Cite a range you would actually want someone to read. A one-line citation opens nine lines
 of context and reads well; a forty-line citation fills the panel with green and proves
@@ -57,6 +80,17 @@ Record what you traced in `meta.repository`:
 ```
 
 A diagram without a ref is a diagram of a moving target. The header prints both.
+
+## Labels are claims
+
+- **A sublabel that lists things lists all of them.** "bids, documents, chat, tenders" over
+  a module with eight routers says the other four do not exist. List them all, name the
+  count ("eight routers"), or say what the list is a sample of.
+- **A label that names one effect of a call names the effect that matters.** An arrow
+  labelled "embed" that also carries a model call hides the call.
+- **A layer in an architecture diagram is a runtime boundary.** Splitting one process into
+  two rails reads as two deployables. If the split is for readability, say so in both
+  rails' notes ("same process").
 
 ## What to leave out
 

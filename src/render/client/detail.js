@@ -116,6 +116,25 @@
       });
       body.appendChild(list);
     }
+    (info.links || []).forEach(function (link) {
+      var title = document.createElement('p');
+      title.className = 'tl-link';
+      title.textContent = '\u2192 ' + link.to + (link.label ? ' \u00b7 ' + link.label : '');
+      body.appendChild(title);
+      if (link.detail) {
+        var why = document.createElement('p');
+        why.textContent = link.detail;
+        body.appendChild(why);
+      }
+      if (link.sources.length) {
+        var rows = document.createElement('div');
+        rows.className = 'tl-sources';
+        link.sources.forEach(function (source) {
+          rows.appendChild(sourceRow(source));
+        });
+        body.appendChild(rows);
+      }
+    });
 
     currentEl = el;
     panel.classList.remove('wide');

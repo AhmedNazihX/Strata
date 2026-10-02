@@ -11,9 +11,20 @@ import { Issue } from '../schema/kit.mjs';
 import { TYPE } from '../render/tokens.mjs';
 import { measureText, wrapText } from '../layout/measure.mjs';
 import { CAPTION_LAYOUT } from '../render/shell.mjs';
+import { LABEL_REACH, pathDistance, rectOfLabel } from '../layout/scene.mjs';
+import { textBox } from '../layout/boxes.mjs';
 
 const EPSILON = 0.5;
 const LABEL_CLEARANCE = 2;
+
+/* How close a link may run beside a box it does not connect. Deliberately its
+   own number rather than the router's `linkGap`: the gate judges what the
+   reader sees, and a gate defined by the router's setting loosens silently
+   whenever that setting does — which is how 6px lines, drawn as touching,
+   passed every run. */
+export const MIN_LINK_CLEARANCE = 10;
+/* A run shorter than this is a line passing a corner, not a line hugging an edge. */
+const MIN_ALONGSIDE_RUN = 16;
 
 export function checkGeometry(scene) {
   const issues = [];
@@ -23,9 +34,14 @@ export function checkGeometry(scene) {
   issues.push(...checkBounds(scene));
   issues.push(...checkText(scene));
   issues.push(...checkLinks(scene));
+  issues.push(...checkClearance(scene));
+  issues.push(...checkSharedTracks(scene));
   issues.push(...checkCaption(scene));
-  warnings.push(...checkLabels(scene));
+  const labels = checkLabels(scene);
+  issues.push(...labels.issues);
+  warnings.push(...labels.warnings);
   warnings.push(...checkDensity(scene));
+  warnings.push(...checkDirection(scene));
 
   return { ok: issues.length === 0, issues, warnings };
 }
@@ -68,6 +84,26 @@ function checkBounds(scene) {
       ));
     }
   }
+  // Lines are drawn too. A sequence's messages are links, so a check over
+  // nodes alone passed one drawn through its own caption and off the page.
+  const inside = (x, y) => x >= canvas.x - EPSILON && x <= canvas.x + canvas.w + EPSILON
+    && y >= canvas.y - EPSILON && y <= canvas.y + canvas.h + EPSILON;
+  for (const link of scene.links) {
+    const stray = link.points.filter(([x, y]) => !inside(x, y));
+    if (stray.length) {
+      issues.push(new Issue(
+        `links[${link.id}]`,
+        `runs outside the drawing area at ${stray.length} point${stray.length === 1 ? '' : 's'}`,
+        `the canvas is ${fmt(canvas)} — the page grows to fit up to its limit, so drop a rail or a message`,
+      ));
+    }
+    if (link.labelAt) {
+      const r = rectOfLabel(link.labelAt);
+      if (!inside(r.x, r.y) || !inside(r.x + r.w, r.y + r.h)) {
+        issues.push(new Issue(`links[${link.id}].label`, `"${link.label}" falls outside the drawing area`));
+      }
+    }
+  }
   return issues;
 }
 
@@ -105,31 +141,170 @@ function checkLinks(scene) {
     if (link.points.length < 2) {
       issues.push(new Issue(`links[${link.id}]`, 'has no route'));
     }
+    for (let i = 0; i < link.points.length - 1; i += 1) {
+      const [ax, ay] = link.points[i];
+      const [bx, by] = link.points[i + 1];
+      if (Math.abs(ax - bx) > EPSILON && Math.abs(ay - by) > EPSILON) {
+        issues.push(new Issue(
+          `links[${link.id}]`,
+          `has a segment that is neither horizontal nor vertical, (${Math.round(ax)},${Math.round(ay)}) to (${Math.round(bx)},${Math.round(by)})`,
+          'a skill bug when no via points were given; with via, make each via point share an axis with its neighbour',
+        ));
+        break;
+      }
+    }
   }
   return issues;
 }
 
-function checkLabels(scene) {
-  const warnings = [];
-  const boxes = scene.nodes;
+/**
+ * A link that clears a box by a few pixels is drawn as touching it: the eye
+ * reads the line as part of that box's outline. Measured on the scene, not
+ * taken from the router's own `clean` flag.
+ */
+function checkClearance(scene) {
+  const issues = [];
   for (const link of scene.links) {
-    if (!link.labelAt) continue;
-    const label = {
-      x: link.labelAt.x - link.labelAt.w / 2,
-      y: link.labelAt.y,
-      w: link.labelAt.w,
-      h: link.labelAt.h,
-    };
-    const hit = boxes.find((node) => intersects(label, node, LABEL_CLEARANCE));
-    if (hit) {
-      warnings.push(new Issue(
-        `links[${link.id}].label`,
-        `"${link.label}" sits on top of nodes[${hit.id}]`,
-        'shorten the label or let the link route along a clearer run',
+    for (const node of scene.nodes) {
+      if (node.id === link.from || node.id === link.to) continue;
+      const gap = tightestRunBeside(link.points, node);
+      if (gap === null) continue;
+      issues.push(new Issue(
+        `links[${link.id}]`,
+        `runs alongside nodes[${node.id}] ${gap.toFixed(1)}px from its edge, which reads as touching`,
+        `at least ${MIN_LINK_CLEARANCE}px is needed — reorder the columns so the route is direct, or set fromSide/toSide`,
       ));
     }
   }
-  return warnings;
+  return issues;
+}
+
+/* Two parallel runs closer than this, for longer than the run length, are
+   drawn as one line. */
+const SHARED_TRACK_DISTANCE = 4;
+const SHARED_TRACK_RUN = 12;
+
+/**
+ * Two links that share no box, drawn on one track, read as one line with two
+ * meanings: the reader cannot tell which source reaches which target. Links
+ * that share a box may merge, because a fan-out from one node reads as a trunk.
+ */
+function checkSharedTracks(scene) {
+  const issues = [];
+  const runs = scene.links.map((link) => ({ link, runs: axisRuns(link.points) }));
+  for (let i = 0; i < runs.length; i += 1) {
+    for (let j = i + 1; j < runs.length; j += 1) {
+      const a = runs[i];
+      const b = runs[j];
+      if ([a.link.from, a.link.to].some((id) => id === b.link.from || id === b.link.to)) continue;
+      const shared = longestShared(a.runs, b.runs);
+      if (shared < SHARED_TRACK_RUN) continue;
+      issues.push(new Issue(
+        `links[${a.link.id}]`,
+        `runs on the same track as links[${b.link.id}] for ${Math.round(shared)}px, so the two read as one line`,
+        'the gutter between them has no free lane — reorder the columns so they part, or move one end',
+      ));
+    }
+  }
+  return issues;
+}
+
+function axisRuns(points) {
+  const runs = [];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const [ax, ay] = points[i];
+    const [bx, by] = points[i + 1];
+    if (Math.abs(ax - bx) < EPSILON) runs.push({ vertical: true, at: ax, lo: Math.min(ay, by), hi: Math.max(ay, by) });
+    else if (Math.abs(ay - by) < EPSILON) runs.push({ vertical: false, at: ay, lo: Math.min(ax, bx), hi: Math.max(ax, bx) });
+  }
+  return runs;
+}
+
+function longestShared(a, b) {
+  let longest = 0;
+  for (const p of a) {
+    for (const q of b) {
+      if (p.vertical !== q.vertical || Math.abs(p.at - q.at) > SHARED_TRACK_DISTANCE) continue;
+      longest = Math.max(longest, Math.min(p.hi, q.hi) - Math.max(p.lo, q.lo));
+    }
+  }
+  return longest;
+}
+
+/** The smallest gap of any axis-aligned run travelling beside `box`, or null. */
+function tightestRunBeside(points, box) {
+  let tightest = null;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const [ax, ay] = points[i];
+    const [bx, by] = points[i + 1];
+    const horizontal = Math.abs(ay - by) < EPSILON;
+    if (!horizontal && Math.abs(ax - bx) >= EPSILON) continue;
+    const span = horizontal ? [ax, bx, box.x, box.x + box.w] : [ay, by, box.y, box.y + box.h];
+    const run = Math.min(Math.max(span[0], span[1]), span[3]) - Math.max(Math.min(span[0], span[1]), span[2]);
+    if (run < MIN_ALONGSIDE_RUN) continue;
+    const at = horizontal ? ay : ax;
+    const [near, far] = horizontal ? [box.y, box.y + box.h] : [box.x, box.x + box.w];
+    const gap = at < near ? near - at : at > far ? at - far : 0;
+    if (gap < MIN_LINK_CLEARANCE && (tightest === null || gap < tightest)) tightest = gap;
+  }
+  return tightest;
+}
+
+/* A label more than this share over a box hides the box's own text. */
+const LABEL_COVER_LIMIT = 0.4;
+
+/**
+ * A label is a claim about which line it names, so it is judged against
+ * every line, every other label and every box — not only the boxes, which
+ * is all this checked before labels were found naming the wrong line.
+ */
+function checkLabels(scene) {
+  const issues = [];
+  const warnings = [];
+  const placed = scene.links.filter((link) => link.labelAt);
+  for (const link of scene.links.filter((l) => l.label && !l.labelAt)) {
+    issues.push(new Issue(
+      `links[${link.id}].label`,
+      `"${link.label}" has nowhere it reads as naming this line`,
+      'shorten or drop it; on a gate branch, leave it empty and the yes/no pill speaks for it',
+    ));
+  }
+  for (const link of placed) {
+    const where = `links[${link.id}].label`;
+    const box = rectOfLabel(link.labelAt);
+    const own = pathDistance(box, link.points);
+    if (own > LABEL_REACH) {
+      issues.push(new Issue(where, `"${link.label}" sits ${Math.round(own)}px from its own line`, `at most ${LABEL_REACH}px reads as belonging to it`));
+    }
+    for (const other of scene.links) {
+      if (other === link) continue;
+      const d = pathDistance(box, other.points);
+      if (d === 0) {
+        issues.push(new Issue(where, `"${link.label}" is printed across links[${other.id}]`, 'shorten the label, or reorder the columns so the two lines part'));
+      } else if (d < own) {
+        issues.push(new Issue(where, `"${link.label}" is nearer links[${other.id}] than its own line`, 'shorten the label, or reorder the columns'));
+      }
+    }
+    for (const other of placed) {
+      if (other.id > link.id && intersects(box, rectOfLabel(other.labelAt))) {
+        issues.push(new Issue(where, `"${link.label}" overlaps the label of links[${other.id}]`, 'shorten one of them'));
+      }
+    }
+    for (const node of scene.nodes) {
+      if (intersects(box, textBox(node), 0)) {
+        issues.push(new Issue(where, `"${link.label}" is printed over the text of nodes[${node.id}]`, 'shorten or drop the label; the box it covers may already say it'));
+        continue;
+      }
+      const dx = Math.min(box.x + box.w, node.x + node.w) - Math.max(box.x, node.x);
+      const dy = Math.min(box.y + box.h, node.y + node.h) - Math.max(box.y, node.y);
+      if (dx <= 0 || dy <= 0) continue;
+      const covered = (dx * dy) / (box.w * box.h);
+      const finding = new Issue(where, `"${link.label}" sits on top of nodes[${node.id}]`, 'shorten the label or let the link route along a clearer run');
+      if (covered > LABEL_COVER_LIMIT) issues.push(finding);
+      else if (covered > 0.02) warnings.push(finding);
+    }
+  }
+  return { issues, warnings };
 }
 
 function checkCaption(scene) {
@@ -178,6 +353,28 @@ function checkCaption(scene) {
   });
 
   return issues;
+}
+
+/**
+ * A workflow reads left to right, so a forward step whose target is drawn
+ * left of its source reads as the steps happening in the wrong order. The
+ * usual cause is a `col` written by hand that disagrees with the flow.
+ */
+function checkDirection(scene) {
+  if (scene.type !== 'workflow') return [];
+  const byId = new Map(scene.nodes.map((n) => [n.id, n]));
+  return scene.links
+    .filter((link) => link.backEdge === false)
+    .filter((link) => {
+      const from = byId.get(link.from);
+      const to = byId.get(link.to);
+      return from && to && to.x + to.w <= from.x + EPSILON;
+    })
+    .map((link) => new Issue(
+      `links[${link.id}]`,
+      `points backwards: ${link.from} → ${link.to} is a forward step drawn right to left`,
+      'omit col in a workflow and the flow places the nodes, or fix the col that disagrees',
+    ));
 }
 
 const CRAMPED_WIDTH = 124;

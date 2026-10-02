@@ -15,7 +15,11 @@ rerun the same `finalize` command. Do not work around a gate.
 | `a gate with fewer than two outgoing links` | A `gate` that cannot branch is an `action`. |
 | `no state is marked "initial"` | A lifecycle needs an entry point, and an exit (`terminal` or `error`). |
 | `names a file that does not exist` | A `sources` entry is wrong, or `--repo-root` points at the wrong checkout. |
-| `is N lines of comment and no code` | The range is a docstring. `file.py:1-30` is the usual culprit — cite the definition instead. |
+| `is N lines of comment and no code` | The range is a docstring, or a docstring and imports. `file.py:1-30` is the usual culprit — cite the definition instead. |
+| `starts inside a docstring or block comment` / `ends inside …` | The range is a line or more off — typically it opens on the closing `"""` of the docstring above. Move it onto the code. A line comment just above the code is fine. |
+| `is documentation, not code` | A `.md`, `.txt`, `.rst` or similar file describes behaviour; it is not evidence of it. Cite the implementation it describes. |
+| `points outside the repository root` / `is a link that leads outside the repository` | Citations are embedded in the page, so they must stay inside the checkout — including through symlinks. |
+| `names a file that holds secrets by its kind` | `.env`, key and certificate files are never cited: their content would be embedded in a page made to be shared. Cite the code that reads them. |
 | `is N% code` (warning) | Mostly prose. Tighten the range onto the body of the function. |
 
 ## geometry
@@ -23,10 +27,17 @@ rerun the same `finalize` command. Do not work around a gate.
 | Message | What to do |
 |---|---|
 | `overlaps nodes[x]` | Two nodes claim the same column on the same layer. Give one a different `col`, or `span` is too wide. |
-| `falls outside the drawing area` | Too many columns for the canvas, or a `pos` override. Raise `meta.width`, or drop a column. |
-| `the label or sublabel is clipped` | The text does not fit the computed box. Shorten it, raise `span`, or reduce how many columns share the row. Never widen by hand with `size`. |
+| `falls outside the drawing area` | A `pos` override, or a page already grown to its limit (2200px wide, 1600px tall). Drop a column or a rail. |
+| `the label or sublabel is clipped` | The page has already been widened to fit it, up to 2200px, and it still does not. Shorten it, raise `span`, or reduce how many columns share the row. Never widen by hand with `size`. |
 | `the text is taller than its box` | A two-line sublabel in a short rail. Shorten the sublabel or use fewer layers. |
 | `is drawn through a node it does not connect` | Set `fromSide`/`toSide` to send it round, or reorder the columns so the route is natural. `via` is the last resort. |
+| `runs outside the drawing area` | A line, or its label, leaves the canvas. The page grows to fit up to 2200px wide and 1600px tall, so past that drop a rail, a column or some messages. |
+| `has a segment that is neither horizontal nor vertical` | Without `via`, a skill bug — report it. With `via`, make each via point share an x or a y with its neighbour. |
+| `runs on the same track as links[y]` | Two lines with no box in common are drawn as one. The gutter between them has no free lane: reorder the columns so they part, or move one end. |
+| `"x" has nowhere it reads as naming this line` | No spot near the line is clear of other lines and box text. Drop the label (on a gate branch the yes/no pill speaks for it) or shorten it. |
+| `"x" sits Npx from its own line` / `is nearer links[y] than its own line` / `is printed across links[y]` | The label would name the wrong connection. Shorten or drop it, or reorder the columns. |
+| `"x" overlaps the label of links[y]` / `is printed over the text of nodes[y]` | Two pieces of text on top of each other. Shorten or drop one. |
+| `runs alongside nodes[x] Npx from its edge` | The route squeezes past a box it does not connect, and at that distance it is drawn as touching it. Reorder the columns so the two ends are adjacent or aligned — a link from a row's hub to a sibling three columns away has to pass the ones between. Giving a hub its own rail is often the cleanest fix. |
 | `does not fit N lines in the caption` | The `lede` is too long. Cut it; the number it quotes is roughly what fits. |
 | `the value is clipped in its chip` | A note's `v` needs more than two lines. Shorten it or split it into two notes. |
 | `the chips are Npx tall and only Mpx fit` | Too many notes, or they are too long. Six is the maximum and four is usually better. |
@@ -63,6 +74,13 @@ Warnings never fail a run, and all of them are worth a second look.
 - **`N boxes are only Npx wide`** — too many columns for the canvas. The message gives you
   the `meta.width` to use. Narrow boxes shrink the label font and read badly on a projector.
 - **`x is connected to nothing`** — usually a missing link rather than an isolated component.
+- **`links[x] points backwards`** — workflow only: a forward step is drawn right to left,
+  almost always because a hand-written `col` disagrees with the flow. Leave `col` out and
+  let the flow place it.
+- **`N of M links cite no code`** — only with `--repo-root`. Each listed link is a claim with
+  nothing behind it. Cite the call that makes it, or say in its `detail` why there is none
+  (a person clicking a button has no code to cite) — a detail answers the warning, and the
+  reader sees it on the panel of the node the link leaves.
 - **`one step is not a walkthrough`** — either drop `steps` or write the whole sequence.
 
 ## "It looks right in Chrome but not in Safari"

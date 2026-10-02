@@ -70,3 +70,21 @@ export function naturalWidth(node) {
 }
 
 export const BOX_PAD_X = PAD_X;
+
+/**
+ * The rectangle a node's own text occupies, inside its box. A link label may
+ * rest on an empty corner of a box; over this, it makes both unreadable.
+ */
+export function textBox(node) {
+  const fit = node.fit || {};
+  const label = (fit.labelLines || [node.label || '']).map((line) =>
+    measureText(line, { font: 'mono', size: fit.labelSize || TYPE.nodeLabel, weight: 500 }));
+  const subs = (fit.subLines || []).map((line) => measureText(line, { size: fit.subSize || TYPE.nodeSub }));
+  const height = fit.contentHeight || TYPE.nodeLabel * 1.25;
+  return {
+    x: node.x + PAD_X,
+    y: node.y + (node.h - height) / 2,
+    w: Math.min(node.w - PAD_X * 2, Math.max(0, ...label, ...subs)),
+    h: height,
+  };
+}

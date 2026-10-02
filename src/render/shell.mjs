@@ -14,6 +14,7 @@ import { FONTS, THEMES } from './tokens.mjs';
 import { stylesheet } from './css.mjs';
 import { escapeXml, renderSvg } from './svg.mjs';
 import { collectSnippets } from './snippets.mjs';
+import { citedLinksByNode } from './connections.mjs';
 
 const CLIENT_DIR = join(dirname(fileURLToPath(import.meta.url)), 'client');
 const CLIENT_FILES = ['core.js', 'detail.js', 'export.js'];
@@ -129,17 +130,20 @@ function detailPanel() {
 
 function viewerData(scene, options = {}) {
   const nodes = {};
+  const outgoing = citedLinksByNode(scene);
   for (const node of scene.nodes) {
-    if (!node.detail && !(node.sources || []).length && !node.sublabel) continue;
+    const links = outgoing.get(node.id) || [];
+    if (!node.detail && !(node.sources || []).length && !node.sublabel && !links.length) continue;
     nodes[node.id] = {
       label: node.label,
       sublabel: node.sublabel || '',
       detail: node.detail || '',
       sources: node.sources || [],
+      ...(links.length ? { links } : {}),
     };
   }
 
-  const { snippets } = collectSnippets({ nodes: scene.nodes }, options.repoRoot);
+  const { snippets } = collectSnippets({ nodes: scene.nodes, links: scene.links }, options.repoRoot);
 
   return {
     snippets,

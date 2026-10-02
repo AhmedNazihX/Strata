@@ -298,6 +298,17 @@
           "detail": {
             "type": "string",
             "maxLength": 400
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 160,
+              "pattern": "^[^\\s:][^:]*(:\\d+(-\\d+)?)?$",
+              "description": "A repo-relative path, optionally with :line or :start-end. Checked against --repo-root."
+            },
+            "maxItems": 6,
+            "description": "The code that makes this connection. Shown on the panel of the node it leaves."
           }
         },
         "required": [
@@ -398,6 +409,13 @@
               "gold",
               "cyan"
             ]
+          },
+          "shape": {
+            "enum": [
+              "box",
+              "pill"
+            ],
+            "description": "The swatch shape, matching how those nodes are drawn."
           }
         },
         "required": [

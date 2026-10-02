@@ -20,8 +20,21 @@ const SYNTAX = {
   '.sql': { line: ['--'], block: ['/*', '*/'], triple: null },
 };
 
+/* Documentation, whatever it says, is a description of behaviour. */
+const PROSE_EXTENSIONS = new Set(['.md', '.markdown', '.mdx', '.txt', '.rst', '.adoc', '.org']);
+
+export function isProse(path) {
+  return PROSE_EXTENSIONS.has(extname(path).toLowerCase());
+}
+
+/* An import names a module and proves nothing happens: a docstring followed
+   by `import os, sys, json` passed the identifier count on the imported names. */
+const IMPORT_LINE = /^(import\s|from\s+\S+\s+import\s|export\s+(\*|\{[^}]*\})\s+from\s|#include\s|using\s+[\w.]+;|use\s+[\w:]+)/;
+
 /**
- * Classify every line of a file as 'code', 'comment' or 'blank'.
+ * Classify every line of a file as 'code', 'import', 'comment' (a line comment),
+ * 'doc' (a docstring or block comment), 'string' (the body of a multi-line string
+ * assigned in code, such as a prompt constant) or 'blank'.
  * Deliberately approximate: it only has to be right often enough to flag a
  * citation that is entirely prose.
  */
@@ -32,18 +45,19 @@ export function classifyLines(text, path) {
 
   const out = [];
   let openTriple = null;
+  let tripleKind = 'doc';   // a docstring, or the body of a string assigned mid-line
   let inBlock = false;
 
   for (const raw of lines) {
     const line = raw.trim();
 
     if (openTriple) {
-      out.push('comment');
+      out.push(tripleKind);
       if (line.includes(openTriple)) openTriple = null;
       continue;
     }
     if (inBlock) {
-      out.push('comment');
+      out.push('doc');
       if (syntax.block && line.includes(syntax.block[1])) inBlock = false;
       continue;
     }
@@ -51,14 +65,14 @@ export function classifyLines(text, path) {
 
     const triple = (syntax.triple || []).find((mark) => line.startsWith(mark) || line.startsWith(`r${mark}`) || line.startsWith(`f${mark}`));
     if (triple) {
-      out.push('comment');
+      out.push('doc');
       const body = line.slice(line.indexOf(triple) + triple.length);
-      if (!body.includes(triple)) openTriple = triple;
+      if (!body.includes(triple)) { openTriple = triple; tripleKind = 'doc'; }
       continue;
     }
     if (syntax.line.some((mark) => line.startsWith(mark))) { out.push('comment'); continue; }
     if (syntax.block && line.startsWith(syntax.block[0])) {
-      out.push('comment');
+      out.push('doc');
       if (!line.includes(syntax.block[1])) inBlock = true;
       continue;
     }
@@ -66,22 +80,32 @@ export function classifyLines(text, path) {
     // mark behind. Without tracking it, the string's closing line would be read
     // as a docstring *opening* and flip every later line to comment.
     const opened = (syntax.triple || []).find((mark) => line.split(mark).length % 2 === 0);
-    if (opened) openTriple = opened;
-    out.push('code');
+    if (opened) { openTriple = opened; tripleKind = 'string'; }
+    out.push(IMPORT_LINE.test(line) ? 'import' : 'code');
   }
   return out;
 }
 
 /**
- * @returns {{total:number, code:number, comment:number, ratio:number}} over the
- * non-blank lines of the cited range. `ratio` is the share that is code.
+ * @returns {{total:number, code:number, comment:number, imports:number, ratio:number,
+ *   first:string|null, last:string|null}} over the non-blank lines of the cited
+ * range. `ratio` is the share that is code; `first` and `last` are the kinds of
+ * the range's first and last non-blank lines.
  */
 export function evidenceQuality(text, path, start, end) {
   const kinds = classifyLines(text, path).slice(start - 1, end);
-  const comment = kinds.filter((k) => k === 'comment').length;
+  // A string body is prose for this purpose: it describes, it does not run.
+  const comment = kinds.filter((k) => k === 'comment' || k === 'doc' || k === 'string').length;
   const code = kinds.filter((k) => k === 'code').length;
-  const total = comment + code;
-  return { total, code, comment, ratio: total ? code / total : 1 };
+  const imports = kinds.filter((k) => k === 'import').length;
+  const total = comment + code + imports;
+  const filled = kinds.filter((k) => k !== 'blank');
+  return {
+    total, code, comment, imports,
+    ratio: total ? code / total : 1,
+    first: filled[0] || null,
+    last: filled[filled.length - 1] || null,
+  };
 }
 
 /* Words that carry no evidence on their own: a citation made only of these is a

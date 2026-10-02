@@ -35,8 +35,9 @@ the PATH.
    fresh ids, your own wording, your own structure.
 3. **Write the candidate JSON** straight through. Do not plan coordinates in prose, do not
    build a smaller diagram first, do not validate a stub. Give it a `layers` list, a `nodes`
-   list with `layer` and `col`, a `links` list where every link has an `id`, and — unless
-   the user asked for a still diagram — a `steps` walkthrough.
+   list with `layer` and `col` (in a `workflow`, leave `col` out unless you are pinning a
+   node: the flow places the rest), a `links` list where every link has an `id`, and —
+   unless the user asked for a still diagram — a `steps` walkthrough.
 4. **Run one command.** Keep the candidate unchanged while it runs.
 
    ```
@@ -48,6 +49,10 @@ the PATH.
 
 5. **A non-zero exit is never success.** Read the failing gate, fix the cause it names, and
    rerun the same command. `references/troubleshooting.md` has every message and its fix.
+6. **For a diagram of real code, have it reviewed before handing it over.** A reviewer agent
+   in a fresh context checks every node, link and label against the code and hunts for
+   connections the diagram leaves out (`references/repository-evidence.md`, step 7). The
+   gates cannot do this: they prove the diagram is legible, not that it is true.
 
 Unless the user names a location, put each request in its own folder
 `.strata/<type>-<slug>/` with `candidate.json` and the HTML beside it, and set
@@ -81,7 +86,7 @@ components. `sequenceDiagram` → `sequence`. `stateDiagram` → `lifecycle`.
 | Gate | What it proves |
 |---|---|
 | schema | shape, limits, every reference resolves, and with `--repo-root` that every cited file and line exists **and holds actual code rather than only a docstring** |
-| geometry | on the computed layout: no overlapping boxes, nothing outside the canvas, no connector drawn through a node it does not touch, no clipped label, no caption that does not fit |
+| geometry | on the computed layout — boxes, lines and labels alike: no overlapping boxes; no box, line point or label outside the canvas; every segment horizontal or vertical; no connector drawn through — or within 10px alongside — a node it does not touch; no two unrelated connectors on one track; every label within 48px of its own line, nearer it than any other, and clear of other lines, labels and box text; no clipped label; no caption that does not fit |
 | render | one self-contained HTML written |
 | browser | the file loaded in real Chromium **and WebKit**: no script error, every text run measured inside its box, every step lights something and says something, a citation opens its code, the pulses actually move, the theme toggle works, and nothing relies on a CSS feature WebKit will not paint |
 
@@ -134,6 +139,9 @@ and the levers you have over it.
   claim you looked at the rendered diagram unless you opened it.
 - `sources` entries are checked, and their code embedded, only when `--repo-root` is passed.
   Without it the citations are unverified and open nothing — say so.
+- **Passing every gate means the diagram is legible and its citations resolve. It does not
+  mean the diagram is complete or correct.** Say which of the two you checked, and whether a
+  reviewer looked for missing connections.
 - Cite the implementation, never `file.py:1-30`. That range is the module docstring, and a
   citation made of prose is not evidence. The gate fails it.
 - A diagram of real code is traced from the code. `references/repository-evidence.md` is

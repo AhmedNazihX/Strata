@@ -8,9 +8,9 @@
  */
 
 import { GEO, TYPE } from '../render/tokens.mjs';
-import { fitNodeText, textBaselines } from './boxes.mjs';
+import { fitNodeText, textBaselines, textBox } from './boxes.mjs';
 import { measureText } from './measure.mjs';
-import { longestRun, pathD, polylineLength, rectOf, route } from './route.mjs';
+import { longestRun, pathD, polylineLength, rectOf, route, tracksOf } from './route.mjs';
 
 /* A box should read as holding its text, not as a room the text sits in.
    Below this fraction a box looks empty, which is how a lane with one node
@@ -37,16 +37,34 @@ export function finishScene({ doc, frame, layers, nodes, marks = [], axis = null
 
   const byId = new Map(placed.map((n) => [n.id, n]));
   const obstacles = placed.map(rectOf);
-  const links = (doc.links || []).map((link) => buildLink(link, byId, obstacles, frame));
+  // Each link is routed seeing the tracks already taken, so two unrelated
+  // links in one gutter take separate lanes. Links with fixed geometry go
+  // first — they cannot move, so the ones that can must route around them —
+  // and the output keeps declaration order.
+  const tracks = [];
+  const declared = doc.links || [];
+  const fixed = (link) => (Array.isArray(link.via) && link.via.length > 0)
+    || (Array.isArray(link.points) && link.points.length >= 2);
+  const order = [...declared.keys()].sort((a, b) => Number(fixed(declared[b])) - Number(fixed(declared[a])));
+  const builtAt = new Map();
+  for (const i of order) {
+    const built = buildLink(declared[i], byId, obstacles, tracks);
+    if (built) tracks.push(...tracksOf(built.points, [built.from, built.to]));
+    builtAt.set(i, built);
+  }
+  const links = declared.map((_, i) => builtAt.get(i));
 
   // Labels are placed after every route is known, one at a time, each one
   // treating the labels already down as obstacles. Placing them independently
   // is how "2nd opinion" and "extract, score" ended up printed on top of each
   // other, which reads as neither.
   const taken = [];
-  for (const link of links) {
-    if (!link || !link.label) continue;
-    link.labelAt = placeLabel(link.label, link.points, obstacles, frame, taken);
+  const texts = placed.map(textBox);
+  const routed = links.filter(Boolean);
+  for (const link of routed) {
+    if (!link.label) continue;
+    const others = routed.filter((other) => other !== link).map((other) => other.points);
+    link.labelAt = placeLabel(link.label, link.points, { obstacles, frame, taken, others, texts });
     if (link.labelAt) taken.push(rectOfLabel(link.labelAt));
   }
 
@@ -87,7 +105,7 @@ function shrinkToContent(node) {
   return { ...node, y: node.y + (node.h - height) / 2, h: height };
 }
 
-function buildLink(link, byId, obstacles, frame) {
+function buildLink(link, byId, obstacles, tracks) {
   const from = byId.get(link.from);
   const to = byId.get(link.to);
   if (!from || !to) return null;
@@ -97,7 +115,7 @@ function buildLink(link, byId, obstacles, frame) {
   // polyline over directly rather than asking the router to rediscover it.
   const routed = Array.isArray(link.points) && link.points.length >= 2
     ? { points: link.points, sides: [link.fromSide || 'right', link.toSide || 'left'], clean: true }
-    : route(rectOf(from), rectOf(to), link, obstacles);
+    : route(rectOf(from), rectOf(to), link, obstacles, tracks);
   const run = longestRun(routed.points);
   const length = polylineLength(routed.points);
 
@@ -114,56 +132,87 @@ function buildLink(link, byId, obstacles, frame) {
   };
 }
 
-const LABEL_SLIDES = [0.5, 0.38, 0.62, 0.26, 0.74];
+const LABEL_SLIDES = [0.5, 0.38, 0.62, 0.26, 0.74, 0.14, 0.86];
 const LABEL_PAD = 3;      // how far a label sits off the line it belongs to
 const LABEL_CLEAR = 1;    // clearance demanded of a node box — a hair, not a margin
 const PAGE_INSET = 6;
+/* Furthest a label may sit from its own line and still read as naming it.
+   Lifting a label clear of a row of boxes, for a short connector between
+   neighbours, lands it about this far away; anything further names nothing. */
+export const LABEL_REACH = 48;
+/* Costs, in square px of overlap they are worth. A label on another line
+   names that line; on another label, both are unreadable; on a box, untidy. */
+const COST_ON_OTHER_LINE = 4000;
+const COST_ON_BOX_TEXT = 4000;
+const LABEL_OVERLAP_WEIGHT = 3;
+const DISTANCE_WEIGHT = 4;
 
 /**
- * Put the label on the clearest run the path offers.
+ * Put the label where it unmistakably names its own line.
  *
- * Runs are tried longest first, and on each one the label slides along and
- * flips to the other side until it clears every box. Only if nothing on the
- * whole path is clear does it settle for the least-bad position — a label
- * printed over a component reads as belonging to it, which is worse than a
- * label sitting slightly off-centre on a shorter leg.
+ * Every run, slide and side is tried, each candidate is clamped to the
+ * canvas *before* it is judged — clamping afterwards is how labels piled up
+ * on each other at the page edge — and a candidate is only eligible when it
+ * is within `LABEL_REACH` of its own line and closer to it than to any other.
+ * Among those, the cheapest wins: on another line costs most, then another
+ * label, then a box, then distance. No eligible candidate means no label,
+ * which the geometry gate reports rather than drawing one that misleads.
  */
-function placeLabel(text, points, obstacles, frame, taken = []) {
+function placeLabel(text, points, { obstacles, frame, taken = [], others = [], texts = [] }) {
   const w = measureText(text, { size: TYPE.linkLabel }) + 12;
   const h = TYPE.linkLabel + 8;
-  const runs = segmentsOf(points).sort((a, b) => b.length - a.length);
 
   let best = null;
   let bestCost = Infinity;
-
-  for (const run of runs) {
+  for (const run of segmentsOf(points)) {
     for (const t of LABEL_SLIDES) {
-      const at = lerp(run, t);
-      for (const box of candidatesAt(at, run, w, h, obstacles)) {
-        // Two labels on top of each other are unreadable; a label touching a
-        // box is merely untidy. Weight accordingly.
-        const cost = overlapArea(box, obstacles) + overlapArea(box, taken) * 3;
-        if (cost === 0) return clampToPage(box, frame);
+      for (const raw of candidatesAt(lerp(run, t), run, w, h, obstacles)) {
+        const box = clampToCanvas(raw, frame);
+        const rect = rectOfLabel(box);
+        const own = pathDistance(rect, points);
+        if (own > LABEL_REACH) continue;
+        const nearestOther = Math.min(Infinity, ...others.map((other) => pathDistance(rect, other)));
+        if (nearestOther < own) continue;
+        const onText = texts.some((t) => rect.x < t.x + t.w && t.x < rect.x + rect.w && rect.y < t.y + t.h && t.y < rect.y + rect.h);
+        const cost = (nearestOther === 0 ? COST_ON_OTHER_LINE : 0)
+          + (onText ? COST_ON_BOX_TEXT : 0)
+          + overlapArea(box, taken) * LABEL_OVERLAP_WEIGHT
+          + overlapArea(box, obstacles)
+          + own * DISTANCE_WEIGHT;
         if (cost < bestCost) { bestCost = cost; best = box; }
       }
     }
   }
-  return best ? clampToPage(best, frame) : null;
+  return best;
+}
+
+/** Shortest distance from a rect to any segment of a polyline; 0 when touching. */
+export function pathDistance(rect, points) {
+  let best = Infinity;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const [ax, ay] = points[i];
+    const [bx, by] = points[i + 1];
+    const dx = Math.max(rect.x - Math.max(ax, bx), 0, Math.min(ax, bx) - (rect.x + rect.w));
+    const dy = Math.max(rect.y - Math.max(ay, by), 0, Math.min(ay, by) - (rect.y + rect.h));
+    best = Math.min(best, Math.hypot(dx, dy));
+  }
+  return best;
 }
 
 /** A label box as a plain rect, for use as an obstacle. */
-function rectOfLabel(label) {
+export function rectOfLabel(label) {
   return { x: label.x - label.w / 2, y: label.y, w: label.w, h: label.h };
 }
 
-/* A label that leaves the page is worse than one slightly off its line. */
-function clampToPage(box, frame) {
+/* A label is part of the drawing, so it stays on the canvas the gate checks. */
+function clampToCanvas(box, frame) {
   if (!frame) return box;
+  const area = frame.canvas || { x: 0, y: 0, w: frame.width, h: frame.height };
   const half = box.w / 2;
-  const minX = PAGE_INSET + half;
-  const maxX = frame.width - PAGE_INSET - half;
-  const minY = PAGE_INSET;
-  const maxY = frame.height - PAGE_INSET - box.h;
+  const minX = area.x + PAGE_INSET + half;
+  const maxX = area.x + area.w - PAGE_INSET - half;
+  const minY = area.y + PAGE_INSET;
+  const maxY = area.y + area.h - PAGE_INSET - box.h;
   return {
     ...box,
     x: Math.min(Math.max(box.x, minX), Math.max(minX, maxX)),

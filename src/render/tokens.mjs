@@ -91,9 +91,10 @@ export const GEO = {
   gutter: 194,      // left label column, where a layout uses rails
   headerH: 96,
   captionH: 318,
-  railGap: 24,
-  nodeGap: 20,
-  linkGap: 6,       // clearance a routed link keeps from any node box
+  railGap: 40,      // room for three runs between rails, linkGap clear either side
+  nodeGap: 40,      // and for three vertical runs between columns
+  linkGap: 11,      // clearance a routed link keeps from any node box (the gate demands 10)
+  lineGap: 6,       // spacing between two unrelated links sharing a gutter
   corner: 12,
   pulseSpeed: 1.7,  // seconds for one pulse to traverse a link
 };

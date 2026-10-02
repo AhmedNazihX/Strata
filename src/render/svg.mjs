@@ -6,6 +6,7 @@
  * carries no marker references that a consumer might not resolve.
  */
 
+import { citedLinksByNode } from './connections.mjs';
 import { BOX_PAD_X } from '../layout/boxes.mjs';
 import { ACCENT_RAMP, GEO, TYPE } from './tokens.mjs';
 
@@ -34,6 +35,7 @@ const round = (v) => Math.round(v * 10) / 10;
 
 export function renderSvg(scene) {
   const { frame } = scene;
+  const opens = new Set(citedLinksByNode(scene).keys());
   const parts = [
     `<svg class="tl-stage" width="${frame.width}" height="${frame.height}"`,
     ` viewBox="0 0 ${frame.width} ${frame.height}" xmlns="http://www.w3.org/2000/svg"`,
@@ -42,7 +44,7 @@ export function renderSvg(scene) {
     `<g class="layer-rails">${scene.layers.map(rail).join('')}</g>`,
     `<g class="layer-marks">${scene.marks.map(mark).filter(Boolean).join('')}</g>`,
     `<g class="layer-links">${scene.links.map(link).join('')}</g>`,
-    `<g class="layer-nodes">${scene.nodes.map(node).join('')}</g>`,
+    `<g class="layer-nodes">${scene.nodes.map((n) => node(n, opens.has(n.id))).join('')}</g>`,
     '</svg>',
   ];
   return parts.join('');
@@ -113,7 +115,7 @@ function corner(n) {
   return Number.isFinite(n.corner) ? n.corner : GEO.corner;
 }
 
-function node(n) {
+function node(n, hasCitedLinks = false) {
   const labelX = round(n.x + BOX_PAD_X);
   const texts = [];
   n.fit.labelLines.forEach((line, i) => {
@@ -127,7 +129,7 @@ function node(n) {
     texts.push(`<text class="node-tag" x="${round(n.x + n.w - BOX_PAD_X)}" y="${round(n.y + 14)}" text-anchor="end">${escapeXml(n.tag)}</text>`);
   }
 
-  const detail = n.detail || (n.sources || []).length;
+  const detail = n.detail || (n.sources || []).length || hasCitedLinks;
   return [
     `<g class="node${detail ? ' has-detail' : ''}" data-node="${escapeXml(n.id)}"`,
     ` data-kind="${escapeXml(n.kind)}" style="${accentVar(n.accent)}"`,

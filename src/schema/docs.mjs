@@ -104,6 +104,7 @@ function linkSpec(type) {
     toSide: enumOf(SIDES),
     via: arr(point(), { max: 8, describe: 'Explicit bends. Only for a route the engine cannot find.' }),
     detail: str({ max: 400 }),
+    sources: arr(sourceRef, { max: 6, describe: 'The code that makes this connection. Shown on the panel of the node it leaves.' }),
   }, { required: ['from', 'to'] });
 }
 

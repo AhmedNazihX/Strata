@@ -351,8 +351,17 @@ async function openCitation(page, timeout) {
     Boolean(window.TL && window.TL.data.snippets && Object.keys(window.TL.data.snippets).length));
   if (!hasSnippets) return [];
 
-  const node = await page.$('.node.has-detail');
-  if (!node) return [{ level: 'error', what: 'citation', detail: 'code was embedded but no node is clickable' }];
+  // A box that opens is not necessarily one that cites code: some only explain
+  // themselves. Pick one whose panel holds an embedded citation, its own or one
+  // of its links', or the gate fails a page that is fine.
+  const citing = await page.evaluate(() => {
+    const { nodes = {}, snippets = {} } = window.TL.data;
+    const embedded = (list) => (list || []).some((source) => snippets[source]);
+    return Object.keys(nodes).find((id) => embedded(nodes[id].sources)
+      || (nodes[id].links || []).some((link) => embedded(link.sources))) || null;
+  });
+  const node = citing ? await page.$(`.node.has-detail[data-node="${citing}"]`) : null;
+  if (!node) return [{ level: 'error', what: 'citation', detail: 'code was embedded but no node that cites it is clickable' }];
 
   await node.click({ timeout });
   await page.waitForTimeout(120);

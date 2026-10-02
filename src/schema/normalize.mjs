@@ -52,6 +52,10 @@ export function normalize(input) {
       layer: layerId,
       kind: node.kind || NODE_KINDS[type][0],
       col,
+      // Recorded because `col` has just been filled in for every node, and a
+      // layout that honours the author's columns cannot tell them apart from
+      // the defaults afterwards.
+      colGiven: Number.isInteger(node.col),
       span,
       accent: layer ? layer.accent : (kindAccent(type, node.kind || NODE_KINDS[type][0]) ?? accentFor(index)),
       layerIndex: layer ? layer.index : 0,
@@ -61,6 +65,7 @@ export function normalize(input) {
   doc.links = (doc.links || []).map((link, index) => ({
     label: '',
     detail: '',
+    sources: [],
     ...link,
     index,
     id: link.id || `link-${index + 1}`,

@@ -7,8 +7,9 @@
  * be checked offline by someone who does not have the repository.
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
+import { resolveSource } from '../check/sources.mjs';
 
 const CONTEXT_LINES = 4;
 const MAX_LINES = 44;
@@ -16,7 +17,6 @@ const MAX_LINE_CHARS = 170;
 const HEADLESS_LINES = 18;   // shown when a source names a file but no line
 const TOTAL_BUDGET = 420_000; // characters of snippet text in one document
 
-const SOURCE_PATTERN = /^(.*?)(?::(\d+)(?:-(\d+))?)?$/;
 
 /**
  * @returns {{snippets: Record<string, object>, skipped: string[], truncated: boolean}}
@@ -31,8 +31,9 @@ export function collectSnippets(doc, repoRoot) {
   let budget = TOTAL_BUDGET;
   let truncated = false;
 
-  for (const node of doc.nodes || []) {
-    for (const raw of node.sources || []) {
+  const cited = [...(doc.nodes || []), ...(doc.links || [])];
+  for (const item of cited) {
+    for (const raw of item.sources || []) {
       if (snippets[raw]) continue;
 
       const parsed = parseSource(raw, root);
@@ -53,18 +54,10 @@ export function collectSnippets(doc, repoRoot) {
   return { snippets, skipped, truncated };
 }
 
+/* The same resolver validation uses, so nothing validation refuses is embedded. */
 function parseSource(raw, root) {
-  const match = SOURCE_PATTERN.exec(raw);
-  if (!match) return null;
-  const file = resolve(root, match[1]);
-  if (!file.startsWith(root)) return null;
-  if (!existsSync(file) || !statSync(file).isFile()) return null;
-  return {
-    file,
-    path: match[1],
-    start: match[2] ? Number(match[2]) : null,
-    end: match[3] ? Number(match[3]) : (match[2] ? Number(match[2]) : null),
-  };
+  const resolved = resolveSource(raw, root);
+  return resolved.ok ? resolved : null;
 }
 
 function readLines(file, cache) {

@@ -4,11 +4,12 @@
  * source file actually exists at the line it names.
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Issue, validate as validateShape } from './kit.mjs';
 import { LAYERS_REQUIRED, LAYER_NOUN, SPECS, DIAGRAM_TYPES } from './docs.mjs';
-import { citedCode, evidenceQuality, identifierCount } from '../check/evidence.mjs';
+import { resolveSource } from '../check/sources.mjs';
+import { citedCode, evidenceQuality, identifierCount, isProse } from '../check/evidence.mjs';
 
 export function validateDocument(doc, options = {}) {
   const issues = [];
@@ -40,7 +41,7 @@ export function validateDocument(doc, options = {}) {
     issues.push(...evidence.issues);
     warnings.push(...evidence.warnings);
   } else if (hasSources(doc)) {
-    warnings.push(new Issue('nodes[].sources', 'source references were not checked', 'pass --repo-root to verify them'));
+    warnings.push(new Issue('sources', 'source references were not checked', 'pass --repo-root to verify them'));
   }
 
   return { ok: issues.length === 0, issues, warnings };
@@ -208,7 +209,7 @@ function checkAdvisory(doc, type) {
 }
 
 function hasSources(doc) {
-  return (doc.nodes || []).some((n) => (n.sources || []).length);
+  return [...(doc.nodes || []), ...(doc.links || [])].some((item) => (item.sources || []).length);
 }
 
 /* A citation whose range holds no code at all cannot support a claim about
@@ -219,63 +220,95 @@ const PROSE_WARNING_RATIO = 0.4;
 const MIN_IDENTIFIERS = 3;
 
 function checkSources(doc, repoRoot) {
-  const issues = [];
-  const warnings = [];
   const root = resolve(repoRoot);
   if (!existsSync(root)) {
-    return { issues: [new Issue('--repo-root', `${root} does not exist`)], warnings };
+    return { issues: [new Issue('--repo-root', `${root} does not exist`)], warnings: [] };
   }
 
-  (doc.nodes || []).forEach((node, i) => {
-    (node.sources || []).forEach((raw, j) => {
-      const path = `nodes[${i}].sources[${j}]`;
-      const match = /^(.*?)(?::(\d+)(?:-(\d+))?)?$/.exec(raw);
-      const file = resolve(root, match[1]);
-      if (!file.startsWith(root)) {
-        issues.push(new Issue(path, 'points outside the repository root', raw));
-        return;
-      }
-      if (!existsSync(file) || !statSync(file).isFile()) {
-        issues.push(new Issue(path, 'names a file that does not exist', `${match[1]} relative to ${root}`));
-        return;
-      }
-      if (!match[2]) return;
+  const cited = [
+    ...(doc.nodes || []).map((node, i) => [`nodes[${i}]`, node]),
+    ...(doc.links || []).map((link, i) => [`links[${i}]`, link]),
+  ];
+  const findings = cited.flatMap(([where, item]) =>
+    (item.sources || []).map((raw, j) => checkSource(`${where}.sources[${j}]`, raw, root)));
 
-      const text = readFileSync(file, 'utf8');
-      const lines = text.split('\n').length;
-      const start = Number(match[2]);
-      const end = match[3] ? Number(match[3]) : start;
-      if (start < 1 || end > lines || start > end) {
-        issues.push(new Issue(path, `names lines ${start}-${end} of a ${lines}-line file`));
-        return;
-      }
+  return {
+    issues: findings.flatMap((f) => f.issues),
+    warnings: [...findings.flatMap((f) => f.warnings), ...uncitedLinks(doc)],
+  };
+}
 
-      const quality = evidenceQuality(text, match[1], start, end);
-      if (quality.total === 0) {
-        warnings.push(new Issue(path, `${raw} cites only blank lines`));
-      } else if (quality.code === 0) {
-        issues.push(new Issue(
-          path,
-          `${raw} is ${quality.comment} lines of comment and no code`,
-          'cite the implementation the claim rests on, not the docstring about it',
-        ));
-      } else if (identifierCount(citedCode(text, match[1], start, end)) < MIN_IDENTIFIERS) {
-        warnings.push(new Issue(
-          path,
-          `${raw} names almost nothing`,
-          'a range of bare control flow proves nothing happens there — cite the lines that do the work',
-        ));
-      } else if (quality.ratio < PROSE_WARNING_RATIO) {
-        warnings.push(new Issue(
-          path,
-          `${raw} is ${Math.round(quality.ratio * 100)}% code`,
-          'mostly prose — a tighter range over the implementation reads better',
-        ));
-      }
-    });
-  });
+/** One citation against the checkout: it resolves, and the range is code. */
+function checkSource(path, raw, root) {
+  const fail = (...args) => ({ issues: [new Issue(path, ...args)], warnings: [] });
+  const warn = (...args) => ({ issues: [], warnings: [new Issue(path, ...args)] });
+  const resolved = resolveSource(raw, root);
+  if (!resolved.ok) return fail(resolved.problem, resolved.hint);
+  if (isProse(resolved.path)) {
+    return fail(`${raw} is documentation, not code`, 'cite the implementation the document describes');
+  }
+  const { file, start, end } = resolved;
+  const relPath = resolved.path;
+  if (start === null) return { issues: [], warnings: [] };
 
-  return { issues, warnings };
+  const text = readFileSync(file, 'utf8');
+  const lines = text.split('\n').length;
+  if (start < 1 || end > lines || start > end) return fail(`names lines ${start}-${end} of a ${lines}-line file`);
+
+  const quality = evidenceQuality(text, relPath, start, end);
+  if (quality.total === 0) return warn(`${raw} cites only blank lines`);
+  if (quality.code === 0) {
+    const what = quality.imports
+      ? `${quality.comment} lines of comment and ${quality.imports} of imports`
+      : `${quality.comment} lines of comment`;
+    return fail(
+      `${raw} is ${what} and no code`,
+      'cite the implementation the claim rests on, not the docstring about it',
+    );
+  }
+  // A range that opens or closes inside a docstring or block comment is cited a
+  // line or more off; the usual case is starting on the closing quotes of the
+  // docstring above. A line comment explaining the code under it is fine.
+  if (quality.first === 'doc' || quality.last === 'doc') {
+    const end = quality.first === 'doc' ? 'starts' : 'ends';
+    return fail(
+      `${raw} ${end} inside a docstring or block comment`,
+      'move the range onto the code — the first and last cited lines should both do something',
+    );
+  }
+  if (identifierCount(citedCode(text, relPath, start, end)) < MIN_IDENTIFIERS) {
+    return warn(
+      `${raw} names almost nothing`,
+      'a range of bare control flow proves nothing happens there — cite the lines that do the work',
+    );
+  }
+  if (quality.ratio < PROSE_WARNING_RATIO) {
+    return warn(
+      `${raw} is ${Math.round(quality.ratio * 100)}% code`,
+      'mostly prose — a tighter range over the implementation reads better',
+    );
+  }
+  return { issues: [], warnings: [] };
+}
+
+/**
+ * In a diagram traced from code, an arrow is a claim as much as a box is —
+ * "the graph writes the checkpoint" — and an arrow with nothing behind it is
+ * where a guessed connection hides. Advisory, because some links (a user
+ * clicking a button) have no code to cite.
+ */
+function uncitedLinks(doc) {
+  const links = doc.links || [];
+  // A link that says in its detail why it has no code is answered: the
+  // reader is shown that explanation on the panel of the node it leaves.
+  const bare = links.filter((link) => !(link.sources || []).length && !link.detail);
+  if (!bare.length) return [];
+  const ids = bare.map((link) => link.id || `${link.from}→${link.to}`);
+  return [new Issue(
+    'links',
+    `${bare.length} of ${links.length} links cite no code (${ids.slice(0, 6).join(', ')}${ids.length > 6 ? ', …' : ''})`,
+    'give each link the sources that make the call, or say in its detail why it has none',
+  )];
 }
 
 function listOf(ids) {

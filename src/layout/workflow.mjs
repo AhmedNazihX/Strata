@@ -77,15 +77,15 @@ function rankNodes(nodes, forwardOut) {
   }
   return rank;
 }
-/** Normalisation fills every `.col`: replay it to find where the author disagreed. */
+
+/**
+ * The nodes whose column the author wrote. Read from the record normalisation
+ * keeps, never inferred from the value: a col that happens to equal the
+ * declaration-order default is still the author's col, and guessing otherwise
+ * silently dropped every col after the first in a consecutive run.
+ */
 function explicitCols(nodes) {
-  const next = new Map();
-  const explicit = new Set();
-  for (const node of nodes) {
-    if (node.col !== (next.get(node.layer) ?? 0)) explicit.add(node.id);
-    next.set(node.layer, node.col + node.span);
-  }
-  return explicit;
+  return new Set(nodes.filter((node) => node.colGiven).map((node) => node.id));
 }
 
 /** The slots one box covers on one track — two boxes never share one. */
@@ -186,11 +186,14 @@ function fanBracket(node, kids) {
 }
 
 /** A copy of the document — never the input — whose loops carry routing hints. */
+/* Every link carries whether it goes back, so the geometry gate can tell a
+   retry sweeping left on purpose from a forward step drawn backwards. */
 const withSweepHints = (doc, back) => ({
   ...doc,
   links: doc.links.map((link) => {
     const sides = SWEEP_SIDES[link.variant] || (back.has(link.id) ? SWEEP_SIDES.retry : null);
-    return sides ? { ...link, fromSide: link.fromSide || sides[0], toSide: link.toSide || sides[1] } : link;
+    const marked = { ...link, backEdge: Boolean(sides) };
+    return sides ? { ...marked, fromSide: link.fromSide || sides[0], toSide: link.toSide || sides[1] } : marked;
   }),
 });
 
