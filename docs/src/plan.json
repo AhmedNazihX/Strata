@@ -1,0 +1,998 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Capstone backlog: 13 waves",
+    "subtitle": "109 stories as of 2026-10-02 · columns are waves, rows are workstreams",
+    "output": "../../.strata/docs/plan.html",
+    "autoplay": false,
+    "height": 1400
+  },
+  "layers": [
+    {
+      "id": "done",
+      "name": "DONE · 48 STORIES",
+      "note": "merged into main"
+    },
+    {
+      "id": "w1",
+      "name": "WAVE 1",
+      "note": "ready now, 13 stories"
+    },
+    {
+      "id": "w24",
+      "name": "WAVES 2–4",
+      "note": "solo, one at a time"
+    },
+    {
+      "id": "w5",
+      "name": "WAVE 5",
+      "note": "unlocked by E10"
+    },
+    {
+      "id": "w6",
+      "name": "WAVE 6",
+      "note": "the UI begins"
+    },
+    {
+      "id": "w7",
+      "name": "WAVE 7",
+      "note": "result screens"
+    },
+    {
+      "id": "w8",
+      "name": "WAVE 8",
+      "note": "first headline run"
+    },
+    {
+      "id": "w9",
+      "name": "WAVE 9",
+      "note": "comparisons"
+    },
+    {
+      "id": "w1011",
+      "name": "WAVES 10–11",
+      "note": "German, e2e, freeze"
+    },
+    {
+      "id": "w1213",
+      "name": "WAVES 12–13",
+      "note": "write-up and talk"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "done_crit",
+      "layer": "done",
+      "col": 0,
+      "label": "path ✓",
+      "sublabel": "F1 B1–3 C2–6 E4",
+      "tag": "CRITICAL PATH",
+      "kind": "store"
+    },
+    {
+      "id": "done_eng",
+      "layer": "done",
+      "col": 1,
+      "label": "engine ✓",
+      "sublabel": "E1–5 E7 X2 X3",
+      "tag": "ENGINE",
+      "kind": "store"
+    },
+    {
+      "id": "done_bench",
+      "layer": "done",
+      "col": 2,
+      "label": "benchmark ✓",
+      "sublabel": "B1–5 B10a B12 B13",
+      "tag": "BENCHMARK",
+      "kind": "store"
+    },
+    {
+      "id": "done_evalr",
+      "layer": "done",
+      "col": 3,
+      "label": "evaluation ✓",
+      "sublabel": "V1–3 T1",
+      "tag": "EVALUATION",
+      "kind": "store"
+    },
+    {
+      "id": "done_svc",
+      "layer": "done",
+      "col": 4,
+      "label": "corpus, data ✓",
+      "sublabel": "C1–8 P2a P3",
+      "tag": "SERVICES",
+      "kind": "store"
+    },
+    {
+      "id": "done_ui",
+      "layer": "done",
+      "col": 5,
+      "label": "frontend ✓",
+      "sublabel": "P4 P14 P15 P19",
+      "tag": "SCREENS",
+      "kind": "store"
+    },
+    {
+      "id": "done_wrap",
+      "layer": "done",
+      "col": 6,
+      "label": "foundations ✓",
+      "sublabel": "F0–8 T2 T3",
+      "tag": "WRAP-UP",
+      "kind": "store"
+    },
+    {
+      "id": "w1_eng",
+      "layer": "w1",
+      "col": 1,
+      "label": "E6",
+      "sublabel": "Art. 50 node",
+      "tag": "ENGINE",
+      "kind": "transform",
+      "detail": "E6 · Transparency node (Art. 50)"
+    },
+    {
+      "id": "w1_bench",
+      "layer": "w1",
+      "col": 2,
+      "label": "B4 B6 B7 B8 B11 X0",
+      "sublabel": "case sets",
+      "tag": "BENCHMARK",
+      "kind": "transform",
+      "detail": "B4 · Rewrite the Pile B examples as company descriptions\nB6 · Soft-wording pairs\nB7 · Q&A set\nB8 · Consistency triples\nB11 · appliedAI dataset\nX0 · Annex-matching set"
+    },
+    {
+      "id": "w1_evalr",
+      "layer": "w1",
+      "col": 3,
+      "label": "V4",
+      "sublabel": "judge",
+      "tag": "EVALUATION",
+      "kind": "transform",
+      "detail": "V4 · Judge + judge validation"
+    },
+    {
+      "id": "w1_svc",
+      "layer": "w1",
+      "col": 4,
+      "label": "C9",
+      "sublabel": "obligation texts",
+      "tag": "SERVICES",
+      "kind": "transform",
+      "detail": "C9 · Obligation texts for the screens"
+    },
+    {
+      "id": "w1_ui",
+      "layer": "w1",
+      "col": 5,
+      "label": "P16 P17 P18",
+      "sublabel": "site + first visit",
+      "tag": "SCREENS",
+      "kind": "transform",
+      "detail": "P16 · Landing page with motion\nP17 · Site pages: method, privacy, Impressum, contact\nP18 · First visit and company profile"
+    },
+    {
+      "id": "w1_wrap",
+      "layer": "w1",
+      "col": 6,
+      "label": "W0",
+      "sublabel": "law freshness",
+      "tag": "WRAP-UP",
+      "kind": "transform",
+      "detail": "W0 · Freshness check before the build freezes"
+    },
+    {
+      "id": "w24_crit",
+      "layer": "w24",
+      "col": 0,
+      "label": "E8 E9 E10",
+      "sublabel": "engine → public API",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "E8 · Finalize and aggregate\nE9 · Citation existence validator\nE10 · `classify_system` public API"
+    },
+    {
+      "id": "w5_crit",
+      "layer": "w5",
+      "col": 0,
+      "label": "P1",
+      "sublabel": "FastAPI",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "P1 · FastAPI"
+    },
+    {
+      "id": "w5_eng",
+      "layer": "w5",
+      "col": 1,
+      "label": "E11 E12 X2b",
+      "sublabel": "result fields, refusal",
+      "tag": "ENGINE",
+      "kind": "transform",
+      "detail": "E11 · Original-version support\nE12 · Result fields the screens need\nX2b · Refusal route: measure and decide"
+    },
+    {
+      "id": "w5_bench",
+      "layer": "w5",
+      "col": 2,
+      "label": "B9 B10c",
+      "sublabel": "label filter",
+      "tag": "BENCHMARK",
+      "kind": "transform",
+      "detail": "B9 · Second-model label filter\nB10c · Align the own cases"
+    },
+    {
+      "id": "w5_evalr",
+      "layer": "w5",
+      "col": 3,
+      "label": "V5 V6 V7",
+      "sublabel": "metrics",
+      "tag": "EVALUATION",
+      "kind": "transform",
+      "detail": "V5 · Judged metrics\nV6 · RAGAS retrieval metrics\nV7 · Tool-call correctness"
+    },
+    {
+      "id": "w5_svc",
+      "layer": "w5",
+      "col": 4,
+      "label": "P8a P2b",
+      "sublabel": "deployer docs, MCP",
+      "tag": "SERVICES",
+      "kind": "transform",
+      "detail": "P8a · Deployer documents\nP2b · MCP `classify_system`"
+    },
+    {
+      "id": "w6_crit",
+      "layer": "w6",
+      "col": 0,
+      "label": "P5",
+      "sublabel": "classification UI",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "P5 · Classification UI"
+    },
+    {
+      "id": "w6_eng",
+      "layer": "w6",
+      "col": 1,
+      "label": "E13 X2c",
+      "sublabel": "facts step, retry",
+      "tag": "ENGINE",
+      "kind": "transform",
+      "detail": "E13 · Facts step: \"needs a description\"\nX2c · Refusal route: retry in the model layer"
+    },
+    {
+      "id": "w6_bench",
+      "layer": "w6",
+      "col": 2,
+      "label": "B10b X1a",
+      "sublabel": "labels-v1 tag",
+      "tag": "BENCHMARK",
+      "kind": "transform",
+      "detail": "B10b · Tag `labels-v1`\nX1a · Embedding comparison"
+    },
+    {
+      "id": "w6_svc",
+      "layer": "w6",
+      "col": 4,
+      "label": "P8b P28",
+      "sublabel": "provider docs",
+      "tag": "SERVICES",
+      "kind": "transform",
+      "detail": "P8b · Provider document skeletons\nP28 · Short vendor letters"
+    },
+    {
+      "id": "w7_crit",
+      "layer": "w7",
+      "col": 0,
+      "label": "P6",
+      "sublabel": "AI inventory",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "P6 · AI inventory"
+    },
+    {
+      "id": "w7_bench",
+      "layer": "w7",
+      "col": 2,
+      "label": "X1b",
+      "sublabel": "search tuning",
+      "tag": "BENCHMARK",
+      "kind": "transform",
+      "detail": "X1b · Search tuning and relevance cut-off"
+    },
+    {
+      "id": "w7_evalr",
+      "layer": "w7",
+      "col": 3,
+      "label": "V10a",
+      "sublabel": "existing checker",
+      "tag": "EVALUATION",
+      "kind": "transform",
+      "detail": "V10a · Head-to-head: run the existing checker"
+    },
+    {
+      "id": "w7_ui",
+      "layer": "w7",
+      "col": 5,
+      "label": "P5b P9 P12 P20 P21 P23",
+      "sublabel": "result screens",
+      "tag": "SCREENS",
+      "kind": "transform",
+      "detail": "P5b · Follow-up question loop\nP9 · Guided interview + Word/PDF export\nP12 · Privacy surface\nP20 · Not enough to start (screen)\nP21 · Prohibited result\nP23 · Provider result\nAlso waits on (link not drawn): C9→P23"
+    },
+    {
+      "id": "w8_crit",
+      "layer": "w8",
+      "col": 0,
+      "label": "P10",
+      "sublabel": "version toggle",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "P10 · Original vs amended toggle"
+    },
+    {
+      "id": "w8_evalr",
+      "layer": "w8",
+      "col": 3,
+      "label": "V8",
+      "sublabel": "headline run",
+      "tag": "EVALUATION",
+      "kind": "transform",
+      "detail": "V8 · First headline run + gap run"
+    },
+    {
+      "id": "w8_ui",
+      "layer": "w8",
+      "col": 5,
+      "label": "P7 P25",
+      "sublabel": "Q&A, lawyer PDF",
+      "tag": "SCREENS",
+      "kind": "transform",
+      "detail": "P7 · Q&A with citations\nP25 · Report for a lawyer (PDF)"
+    },
+    {
+      "id": "w9_crit",
+      "layer": "w9",
+      "col": 0,
+      "label": "P22",
+      "sublabel": "ambiguous result",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "P22 · Ambiguous result\nAlso waits on (link not drawn): P28→P22"
+    },
+    {
+      "id": "w9_evalr",
+      "layer": "w9",
+      "col": 3,
+      "label": "V9 V10b S2",
+      "sublabel": "comparisons",
+      "tag": "EVALUATION",
+      "kind": "transform",
+      "detail": "V9 · appliedAI run + disagreement review\nV10b · Head-to-head: engine column and scores\nS2 · Premium comparison\nAlso waits on (link not drawn): V10a→V10b"
+    },
+    {
+      "id": "w9_ui",
+      "layer": "w9",
+      "col": 5,
+      "label": "P24 P26",
+      "sublabel": "obligations, phone",
+      "tag": "SCREENS",
+      "kind": "transform",
+      "detail": "P24 · Obligations screen\nP26 · Result on a phone"
+    },
+    {
+      "id": "w1011_crit",
+      "layer": "w1011",
+      "col": 0,
+      "label": "P11 W1",
+      "sublabel": "German, final eval",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "P11 · German completeness\nW1 · Final evaluation (2 full runs)\nAlso waits on (link not drawn): P16→P11, P17→P11, P18→P11\nAlso waits on (link not drawn): W0→W1"
+    },
+    {
+      "id": "w1011_ui",
+      "layer": "w1011",
+      "col": 5,
+      "label": "P13",
+      "sublabel": "end-to-end tests",
+      "tag": "SCREENS",
+      "kind": "transform",
+      "detail": "P13 · Playwright e2e\nAlso waits on (link not drawn): P18→P13"
+    },
+    {
+      "id": "w1213_crit",
+      "layer": "w1213",
+      "col": 0,
+      "label": "W2 W3",
+      "sublabel": "README, talk",
+      "tag": "CRITICAL PATH",
+      "kind": "serve",
+      "detail": "W2 · README + showcase\nW3 · Presentation"
+    },
+    {
+      "id": "w1213_wrap",
+      "layer": "w1213",
+      "col": 6,
+      "label": "P27 S1 S3",
+      "sublabel": "publish, stretch",
+      "tag": "WRAP-UP",
+      "kind": "transform",
+      "detail": "P27 · Publish the measured accuracy\nS1 · Stretch: fixed order vs free agent\nS3 · Stretch: deployment"
+    }
+  ],
+  "links": [
+    {
+      "id": "l_done_eng",
+      "from": "done_eng",
+      "to": "w1_eng",
+      "variant": "batch",
+      "detail": "E1, C5, C6, B5a, B10a→E6"
+    },
+    {
+      "id": "l_done_crit",
+      "from": "done_crit",
+      "to": "w24_crit",
+      "variant": "stream",
+      "detail": "E4→E8"
+    },
+    {
+      "id": "l_w1_eng_w24_crit",
+      "from": "w1_eng",
+      "to": "w24_crit",
+      "variant": "batch",
+      "detail": "E6→E8"
+    },
+    {
+      "id": "l_w24_crit_w5_crit",
+      "from": "w24_crit",
+      "to": "w5_crit",
+      "variant": "stream",
+      "detail": "E10→P1"
+    },
+    {
+      "id": "l_w24_crit_w5_eng",
+      "from": "w24_crit",
+      "to": "w5_eng",
+      "variant": "batch",
+      "detail": "E10→E11, E10→E12"
+    },
+    {
+      "id": "l_w1_bench_w5_bench",
+      "from": "w1_bench",
+      "to": "w5_bench",
+      "variant": "batch",
+      "detail": "B4→B9, B6→B9, B8→B9, X0→B10c"
+    },
+    {
+      "id": "l_w1_evalr_w5_evalr",
+      "from": "w1_evalr",
+      "to": "w5_evalr",
+      "variant": "batch",
+      "detail": "V4→V5"
+    },
+    {
+      "id": "l_w24_crit_w5_evalr",
+      "from": "w24_crit",
+      "to": "w5_evalr",
+      "variant": "batch",
+      "detail": "E10→V5, E10→V7"
+    },
+    {
+      "id": "l_w1_bench_w5_evalr",
+      "from": "w1_bench",
+      "to": "w5_evalr",
+      "variant": "batch",
+      "detail": "B7→V6"
+    },
+    {
+      "id": "l_w24_crit_w5_svc",
+      "from": "w24_crit",
+      "to": "w5_svc",
+      "variant": "batch",
+      "detail": "E10→P8a, E10→P2b"
+    },
+    {
+      "id": "l_w5_crit_w6_crit",
+      "from": "w5_crit",
+      "to": "w6_crit",
+      "variant": "stream",
+      "detail": "P1→P5"
+    },
+    {
+      "id": "l_w5_eng_w6_crit",
+      "from": "w5_eng",
+      "to": "w6_crit",
+      "variant": "batch",
+      "detail": "E12→P5"
+    },
+    {
+      "id": "l_w5_eng_w6_eng",
+      "from": "w5_eng",
+      "to": "w6_eng",
+      "variant": "batch",
+      "detail": "E12→E13, X2b→X2c"
+    },
+    {
+      "id": "l_w5_bench_w6_bench",
+      "from": "w5_bench",
+      "to": "w6_bench",
+      "variant": "batch",
+      "detail": "B9→B10b, B10c→B10b"
+    },
+    {
+      "id": "l_w5_evalr_w6_bench",
+      "from": "w5_evalr",
+      "to": "w6_bench",
+      "variant": "batch",
+      "detail": "V6→X1a"
+    },
+    {
+      "id": "l_w5_svc_w6_svc",
+      "from": "w5_svc",
+      "to": "w6_svc",
+      "variant": "batch",
+      "detail": "P8a→P8b, P8a→P28"
+    },
+    {
+      "id": "l_w5_eng_w6_svc",
+      "from": "w5_eng",
+      "to": "w6_svc",
+      "variant": "batch",
+      "detail": "E12→P28"
+    },
+    {
+      "id": "l_w5_crit_w6_svc",
+      "from": "w5_crit",
+      "to": "w6_svc",
+      "variant": "batch",
+      "detail": "P1→P28"
+    },
+    {
+      "id": "l_w6_crit_w7_crit",
+      "from": "w6_crit",
+      "to": "w7_crit",
+      "variant": "stream",
+      "detail": "P5→P6"
+    },
+    {
+      "id": "l_w6_bench_w7_bench",
+      "from": "w6_bench",
+      "to": "w7_bench",
+      "variant": "batch",
+      "detail": "X1a→X1b"
+    },
+    {
+      "id": "l_w6_bench_w7_evalr",
+      "from": "w6_bench",
+      "to": "w7_evalr",
+      "variant": "batch",
+      "detail": "B10b→V10a"
+    },
+    {
+      "id": "l_w6_crit_w7_ui",
+      "from": "w6_crit",
+      "to": "w7_ui",
+      "variant": "batch",
+      "detail": "P5→P5b, P5→P9, P5→P12, P5→P20, P5→P21, P5→P23"
+    },
+    {
+      "id": "l_w6_svc_w7_ui",
+      "from": "w6_svc",
+      "to": "w7_ui",
+      "variant": "batch",
+      "detail": "P8b→P9, P28→P21"
+    },
+    {
+      "id": "l_w6_eng_w7_ui",
+      "from": "w6_eng",
+      "to": "w7_ui",
+      "variant": "batch",
+      "detail": "E13→P20"
+    },
+    {
+      "id": "l_w7_crit_w8_crit",
+      "from": "w7_crit",
+      "to": "w8_crit",
+      "variant": "stream",
+      "detail": "P6→P10"
+    },
+    {
+      "id": "l_w6_bench_w8_evalr",
+      "from": "w6_bench",
+      "to": "w8_evalr",
+      "variant": "batch",
+      "detail": "B10b→V8, X1a→V8"
+    },
+    {
+      "id": "l_w6_eng_w8_evalr",
+      "from": "w6_eng",
+      "to": "w8_evalr",
+      "variant": "batch",
+      "detail": "X2c→V8"
+    },
+    {
+      "id": "l_w7_bench_w8_ui",
+      "from": "w7_bench",
+      "to": "w8_ui",
+      "variant": "batch",
+      "detail": "X1b→P7"
+    },
+    {
+      "id": "l_w7_ui_w8_ui",
+      "from": "w7_ui",
+      "to": "w8_ui",
+      "variant": "batch",
+      "detail": "P9→P25, P12→P25"
+    },
+    {
+      "id": "l_w8_crit_w9_crit",
+      "from": "w8_crit",
+      "to": "w9_crit",
+      "variant": "stream",
+      "detail": "P10→P22"
+    },
+    {
+      "id": "l_w8_evalr_w9_evalr",
+      "from": "w8_evalr",
+      "to": "w9_evalr",
+      "variant": "batch",
+      "detail": "V8→V9, V8→V10b, V8→S2"
+    },
+    {
+      "id": "l_w8_ui_w9_ui",
+      "from": "w8_ui",
+      "to": "w9_ui",
+      "variant": "batch",
+      "detail": "P25→P24, P7→P26"
+    },
+    {
+      "id": "l_w8_crit_w9_ui",
+      "from": "w8_crit",
+      "to": "w9_ui",
+      "variant": "batch",
+      "detail": "P10→P24"
+    },
+    {
+      "id": "l_w9_crit_w1011_crit",
+      "from": "w9_crit",
+      "to": "w1011_crit",
+      "variant": "stream",
+      "detail": "P22→P11"
+    },
+    {
+      "id": "l_w9_ui_w1011_crit",
+      "from": "w9_ui",
+      "to": "w1011_crit",
+      "variant": "batch",
+      "detail": "P24→P11, P26→P11"
+    },
+    {
+      "id": "l_w9_evalr_w1011_crit",
+      "from": "w9_evalr",
+      "to": "w1011_crit",
+      "variant": "batch",
+      "detail": "V9→W1, V10b→W1"
+    },
+    {
+      "id": "l_w9_ui_w1011_ui",
+      "from": "w9_ui",
+      "to": "w1011_ui",
+      "variant": "batch",
+      "detail": "P24→P13, P26→P13"
+    },
+    {
+      "id": "l_w1011_crit_w1213_crit",
+      "from": "w1011_crit",
+      "to": "w1213_crit",
+      "variant": "stream",
+      "detail": "W1→W2"
+    },
+    {
+      "id": "l_w1011_crit_w1213_wrap",
+      "from": "w1011_crit",
+      "to": "w1213_wrap",
+      "variant": "batch",
+      "detail": "W1→P27, W1→S1, W1→S3, P11→S3"
+    },
+    {
+      "id": "l_w1011_ui_w1213_wrap",
+      "from": "w1011_ui",
+      "to": "w1213_wrap",
+      "variant": "batch",
+      "detail": "P13→S3"
+    },
+    {
+      "id": "l_done_bench_w1_bench",
+      "from": "done_bench",
+      "to": "w1_bench",
+      "variant": "batch",
+      "detail": "B3, B4a, B5, F7b"
+    },
+    {
+      "id": "l_done_wrap_w1_evalr",
+      "from": "done_wrap",
+      "to": "w1_evalr",
+      "variant": "batch",
+      "detail": "F6→V4"
+    },
+    {
+      "id": "l_done_svc_w1_svc",
+      "from": "done_svc",
+      "to": "w1_svc",
+      "variant": "batch",
+      "detail": "C7b→C9"
+    },
+    {
+      "id": "l_done_ui_w1_ui",
+      "from": "done_ui",
+      "to": "w1_ui",
+      "variant": "batch",
+      "detail": "P15, P19→P16–P18"
+    }
+  ],
+  "steps": [
+    {
+      "title": "109 stories, 13 waves, one critical path",
+      "lede": "Columns are waves from backlog.py plan: everything in a column can run together once the columns to its left are merged. Rows are workstreams, and the top row is the critical path. A Gantt chart with waves in place of dates, because the backlog has dependencies but no estimates.",
+      "nodes": [
+        "*"
+      ],
+      "links": [],
+      "notes": [
+        {
+          "k": "progress",
+          "v": "48 of 109 stories merged (44%), 61 open."
+        },
+        {
+          "k": "path weight",
+          "v": "21 stories on the critical path; 9 done, 12 to go."
+        }
+      ]
+    },
+    {
+      "title": "What is already merged",
+      "lede": "The foundations, the corpus, the benchmark split and the own cases, the evaluation runner and the first engine nodes are done. On the critical path, F1 through E4 is behind us; the next story on it is E8.",
+      "nodes": [
+        "done_crit",
+        "done_eng",
+        "done_bench",
+        "done_evalr",
+        "done_svc",
+        "done_ui",
+        "done_wrap"
+      ],
+      "links": [],
+      "notes": [
+        {
+          "k": "gate",
+          "v": "The split (B3) is committed, which is what allowed engine code to exist at all."
+        }
+      ]
+    },
+    {
+      "title": "Wave 1: thirteen stories ready now",
+      "lede": "Every story here has its deps merged. E6 is the one that matters most: it is not on the critical path itself, but E8 waits on it, so it blocks the whole path. The case sets in the benchmark row feed labels-v1 two waves later.",
+      "nodes": [
+        "w1_eng",
+        "w1_bench",
+        "w1_evalr",
+        "w1_svc",
+        "w1_ui",
+        "w1_wrap",
+        "done_eng",
+        "done_bench",
+        "done_wrap",
+        "done_svc",
+        "done_ui"
+      ],
+      "links": [
+        "l_done_eng",
+        "l_done_bench_w1_bench",
+        "l_done_wrap_w1_evalr",
+        "l_done_svc_w1_svc",
+        "l_done_ui_w1_ui"
+      ],
+      "notes": [
+        {
+          "k": "blocker",
+          "v": "E6 → E8: start E6 first, everything to its right waits on it."
+        },
+        {
+          "k": "human work",
+          "v": "B11 is a human story; B4 needs 153 label approvals."
+        }
+      ]
+    },
+    {
+      "title": "Waves 2–4: the engine, one story at a time",
+      "lede": "E8, E9 and E10 run solo, with nothing else in flight, because they reshape the engine every later story builds on. E10 is the public classify_system API; it is the single biggest unlock in the backlog.",
+      "nodes": [
+        "w24_crit",
+        "done_crit",
+        "w1_eng"
+      ],
+      "links": [
+        "l_done_crit",
+        "l_w1_eng_w24_crit"
+      ],
+      "notes": [
+        {
+          "k": "solo",
+          "v": "Nothing else runs during E8, E9 or E10."
+        },
+        {
+          "k": "fan-out",
+          "v": "E10 unblocks 11 stories directly."
+        }
+      ]
+    },
+    {
+      "title": "Wave 5: E10 fans out",
+      "lede": "With the API in place the work splits into four streams at once: FastAPI on the path, the result fields the screens need, the judged and retrieval metrics, and the deployer documents. Labels are filtered by a second model here, ahead of the labels-v1 tag.",
+      "nodes": [
+        "w5_crit",
+        "w5_eng",
+        "w5_bench",
+        "w5_evalr",
+        "w5_svc",
+        "w24_crit",
+        "w1_bench",
+        "w1_evalr"
+      ],
+      "links": [
+        "l_w24_crit_w5_crit",
+        "l_w24_crit_w5_eng",
+        "l_w1_bench_w5_bench",
+        "l_w1_evalr_w5_evalr",
+        "l_w24_crit_w5_evalr",
+        "l_w1_bench_w5_evalr",
+        "l_w24_crit_w5_svc"
+      ],
+      "notes": []
+    },
+    {
+      "title": "Wave 6: the classification UI",
+      "lede": "P5 needs both FastAPI and E12's result fields, which is why the screens could not start earlier. labels-v1 is tagged in this wave: from here the benchmark is frozen and any change goes in LABEL_CHANGES.md.",
+      "nodes": [
+        "w6_crit",
+        "w6_eng",
+        "w6_bench",
+        "w6_svc",
+        "w5_crit",
+        "w5_eng",
+        "w5_bench",
+        "w5_evalr",
+        "w5_svc"
+      ],
+      "links": [
+        "l_w5_crit_w6_crit",
+        "l_w5_eng_w6_crit",
+        "l_w5_eng_w6_eng",
+        "l_w5_bench_w6_bench",
+        "l_w5_evalr_w6_bench",
+        "l_w5_svc_w6_svc",
+        "l_w5_eng_w6_svc",
+        "l_w5_crit_w6_svc"
+      ],
+      "notes": [
+        {
+          "k": "labels-v1",
+          "v": "B10b freezes the labels before the first headline run reads them."
+        }
+      ]
+    },
+    {
+      "title": "Wave 7: the result screens",
+      "lede": "Once the UI exists the result screens can be built in parallel: follow-up questions, the guided interview, privacy, and the prohibited, provider and not-enough-to-start results. The head-to-head starts by running the existing checker.",
+      "nodes": [
+        "w7_crit",
+        "w7_bench",
+        "w7_evalr",
+        "w7_ui",
+        "w6_crit",
+        "w6_bench",
+        "w6_svc",
+        "w6_eng"
+      ],
+      "links": [
+        "l_w6_crit_w7_crit",
+        "l_w6_bench_w7_bench",
+        "l_w6_bench_w7_evalr",
+        "l_w6_crit_w7_ui",
+        "l_w6_svc_w7_ui",
+        "l_w6_eng_w7_ui"
+      ],
+      "notes": []
+    },
+    {
+      "title": "Wave 8: the first headline run",
+      "lede": "V8 is the first real measurement of the engine, and it waits on labels-v1, the embedding comparison and the refusal retry, so its numbers are taken on frozen labels with the final retrieval. On the path, P10 adds the original-versus-amended toggle.",
+      "nodes": [
+        "w8_crit",
+        "w8_evalr",
+        "w8_ui",
+        "w7_crit",
+        "w6_bench",
+        "w6_eng",
+        "w7_bench",
+        "w7_ui"
+      ],
+      "links": [
+        "l_w7_crit_w8_crit",
+        "l_w6_bench_w8_evalr",
+        "l_w6_eng_w8_evalr",
+        "l_w7_bench_w8_ui",
+        "l_w7_ui_w8_ui"
+      ],
+      "notes": [
+        {
+          "k": "paid run",
+          "v": "V8 is a full benchmark run: it needs the user's go-ahead."
+        }
+      ]
+    },
+    {
+      "title": "Wave 9: comparisons and the last screens",
+      "lede": "The appliedAI run, the head-to-head scores and the premium-model comparison all read V8's results. The ambiguous-result screen on the path needs the toggle, because an ambiguous result can depend on which version of the law applies.",
+      "nodes": [
+        "w9_crit",
+        "w9_evalr",
+        "w9_ui",
+        "w8_crit",
+        "w8_evalr",
+        "w8_ui"
+      ],
+      "links": [
+        "l_w8_crit_w9_crit",
+        "l_w8_evalr_w9_evalr",
+        "l_w8_ui_w9_ui",
+        "l_w8_crit_w9_ui"
+      ],
+      "notes": []
+    },
+    {
+      "title": "Waves 10–11: German, end to end, then freeze",
+      "lede": "P11 waits on every product story, since German completeness is checked across all of them. W1 is the build freeze and the final evaluation: two full runs, and it waits on 16 stories, more than any other.",
+      "nodes": [
+        "w1011_crit",
+        "w1011_ui",
+        "w9_crit",
+        "w9_ui",
+        "w9_evalr"
+      ],
+      "links": [
+        "l_w9_crit_w1011_crit",
+        "l_w9_ui_w1011_crit",
+        "l_w9_evalr_w1011_crit",
+        "l_w9_ui_w1011_ui"
+      ],
+      "notes": [
+        {
+          "k": "W1 deps",
+          "v": "16 direct deps; it is where every workstream converges."
+        }
+      ]
+    },
+    {
+      "title": "Waves 12–13: write-up and presentation",
+      "lede": "After the freeze only reporting is left: the README and showcase, the measured accuracy published on the site, the stretch goals, and finally the presentation, which closes the critical path.",
+      "nodes": [
+        "w1213_crit",
+        "w1213_wrap",
+        "w1011_crit",
+        "w1011_ui"
+      ],
+      "links": [
+        "l_w1011_crit_w1213_crit",
+        "l_w1011_crit_w1213_wrap",
+        "l_w1011_ui_w1213_wrap"
+      ],
+      "notes": []
+    }
+  ]
+}

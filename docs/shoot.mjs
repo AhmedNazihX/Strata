@@ -4,9 +4,10 @@
  *
  *   node docs/shoot.mjs
  *
- * Renders the five worked examples and docs/src/finalize.json (which cites this
- * repository, so it can show the code panel), then photographs them in both
- * themes with Playwright and turns one walkthrough into a GIF with ffmpeg.
+ * Renders the five worked examples, docs/src/finalize.json (which cites this
+ * repository, so it can show the code panel) and docs/src/plan.json (a project
+ * plan drawn as waves), then photographs them in both themes with Playwright and
+ * turns two walkthroughs into GIFs with ffmpeg.
  * Every shot loads a fresh page: a URL that differs only in its hash does not
  * reload, and the viewer reads its deep link once, at load.
  */
@@ -29,7 +30,12 @@ const TYPES = ['architecture', 'workflow', 'sequence', 'dataflow', 'lifecycle'];
 const HERO = { type: 'architecture', step: 4 };
 const CITATION = { node: 'geometry', step: 2 };
 
-const GIF = { type: 'architecture', theme: 'dark', steps: 5, stepMs: 2400, width: 800, fps: 10 };
+const PLAN = { name: 'plan', step: 1, viewport: { width: 1600, height: 1400 } };
+
+const GIFS = [
+  { name: 'architecture', file: 'walkthrough.gif', theme: 'dark', steps: 5, stepMs: 2400, width: 800, fps: 10, viewport: VIEWPORT },
+  { name: PLAN.name, file: 'plan-walkthrough.gif', theme: 'dark', steps: 5, stepMs: 2400, width: 760, fps: 6, viewport: PLAN.viewport },
+];
 
 function run(args) {
   const result = spawnSync(process.execPath, [join(ROOT, 'bin', 'strata.mjs'), ...args], { cwd: ROOT, encoding: 'utf8' });
@@ -71,8 +77,8 @@ async function regions(page) {
   });
 }
 
-async function shoot(browser, { name, theme, hash, file, diagramOnly = false, openCode = false }) {
-  const { context, page } = await freshPage(browser, theme);
+async function shoot(browser, { name, theme, hash, file, diagramOnly = false, openCode = false, viewport = VIEWPORT }) {
+  const { context, page } = await freshPage(browser, theme, { viewport });
   try {
     await page.goto(url(name, { ...hash, theme, motion: 'off' }));
     await page.waitForTimeout(SETTLE_MS);
@@ -88,33 +94,34 @@ async function shoot(browser, { name, theme, hash, file, diagramOnly = false, op
   }
 }
 
-async function recordWalkthrough(browser) {
-  const videoDir = join(WORK, 'video');
+async function recordWalkthrough(browser, gif) {
+  const videoDir = join(WORK, 'video', gif.name);
   rmSync(videoDir, { recursive: true, force: true });
-  const { context, page } = await freshPage(browser, GIF.theme, {
+  const { context, page } = await freshPage(browser, gif.theme, {
+    viewport: gif.viewport,
     deviceScaleFactor: 1,
     reducedMotion: 'no-preference',
-    recordVideo: { dir: videoDir, size: VIEWPORT },
+    recordVideo: { dir: videoDir, size: gif.viewport },
   });
-  await page.goto(url(GIF.type, { step: 1, theme: GIF.theme, motion: 'on' }));
+  await page.goto(url(gif.name, { step: 1, theme: gif.theme, motion: 'on' }));
   const { stage } = await regions(page);
-  await page.waitForTimeout(GIF.stepMs);
-  for (let step = 1; step < GIF.steps; step += 1) {
+  await page.waitForTimeout(gif.stepMs);
+  for (let step = 1; step < gif.steps; step += 1) {
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(GIF.stepMs);
+    await page.waitForTimeout(gif.stepMs);
   }
   const video = page.video();
   await context.close();
   return { path: await video.path(), stage };
 }
 
-function toGif({ path, stage }) {
+function toGif(gif, { path, stage }) {
   const crop = `crop=${Math.round(stage.width)}:${Math.round(stage.height)}:${Math.round(stage.x)}:${Math.round(stage.y)}`;
-  const filters = `${crop},fps=${GIF.fps},scale=${GIF.width}:-1:flags=lanczos`;
-  const palette = join(WORK, 'palette.png');
+  const filters = `${crop},fps=${gif.fps},scale=${gif.width}:-1:flags=lanczos`;
+  const palette = join(WORK, `palette-${gif.name}.png`);
   // The first second is the page loading; skip it.
   ffmpeg(['-ss', '1', '-i', path, '-vf', `${filters},palettegen=stats_mode=diff`, palette]);
-  ffmpeg(['-ss', '1', '-i', path, '-i', palette, '-lavfi', `${filters}[v];[v][1:v]paletteuse=dither=bayer:bayer_scale=4`, join(OUT, 'walkthrough.gif')]);
+  ffmpeg(['-ss', '1', '-i', path, '-i', palette, '-lavfi', `${filters}[v];[v][1:v]paletteuse=dither=bayer:bayer_scale=4`, join(OUT, gif.file)]);
 }
 
 async function main() {
@@ -125,6 +132,7 @@ async function main() {
   mkdirSync(OUT, { recursive: true });
   run(['demo', WORK]);
   run(['finalize', 'docs/src/finalize.json', '--repo-root', '.', '--no-browser']);
+  run(['finalize', 'docs/src/plan.json', '--no-browser']);
 
   const browser = await chromium.launch();
   try {
@@ -136,8 +144,13 @@ async function main() {
       for (const type of TYPES) {
         await shoot(browser, { name: type, theme, hash: { step: 2 }, file: `${type}-${theme}.png`, diagramOnly: true });
       }
+      await shoot(browser, {
+        name: PLAN.name, theme, hash: { step: PLAN.step }, file: `plan-${theme}.png`, diagramOnly: true, viewport: PLAN.viewport,
+      });
     }
-    toGif(await recordWalkthrough(browser));
+    for (const gif of GIFS) {
+      toGif(gif, await recordWalkthrough(browser, gif));
+    }
   } finally {
     await browser.close();
   }

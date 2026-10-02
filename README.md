@@ -201,6 +201,43 @@ the document that produced it.
 Mermaid works as input too — read it for topology, then author fresh. `flowchart` becomes a
 workflow, `sequenceDiagram` a sequence, `stateDiagram` a lifecycle.
 
+### Beyond systems: a project plan
+
+The same types draw a plan. Strata has no time axis, so there is no Gantt type, but a backlog
+whose stories have dependencies and no estimates does not need one: its **waves** are the time
+axis. A `dataflow` reads it naturally. Each stage is a wave (stories that can run together once
+everything to their left is merged), and `col` is the row inside a stage, so giving every
+workstream a fixed `col` lines the plan up into swimlanes. The top row carries the critical path.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/plan-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/img/plan-light.png">
+    <img src="docs/img/plan-dark.png" alt="A project backlog drawn as a dataflow: ten columns of waves from done to the final presentation, rows for the critical path and six workstreams, links for the dependencies between them" width="900">
+  </picture>
+</p>
+
+The plan above is a real one: a 109-story backlog, from
+[`docs/src/plan.json`](docs/src/plan.json). Each box groups one workstream's stories in one
+wave, and clicking it lists them. The walkthrough goes a wave at a time and says what each one
+unlocks:
+
+<p align="center">
+  <img src="docs/img/plan-walkthrough.gif" alt="The plan's walkthrough: each step lights one wave and the dependencies that lead into it, with a caption saying what that wave unlocks" width="760">
+</p>
+
+Three things keep a plan legible:
+
+- **Group, don't list.** Eighty nodes is the limit and well past what reads. One box per
+  workstream per wave, with the story ids as its label, stays under forty.
+- **Draw the transitive reduction.** If A → B → C, leave A → C off. That took this plan
+  from 78 dependency links to 44.
+- **Drop the long jumps.** A dependency that skips several waves crosses every box between,
+  and the gate fails it. Leave it off and say so in the target's `detail`.
+
+Strata centres each stage vertically, so a stage with fewer rows does not line up with its
+neighbours. The workstream belongs in each node's `tag` so it still reads.
+
 ## What the reader gets
 
 One HTML file. No build step, no server, no account.
@@ -290,6 +327,7 @@ Say which you want in the request and the agent will not ask.
 | [`references/repository-evidence.md`](references/repository-evidence.md) | diagramming code you have actually read |
 | [`references/troubleshooting.md`](references/troubleshooting.md) | every message and its fix |
 | [`examples/`](examples/) | one worked document per type |
+| [`docs/src/plan.json`](docs/src/plan.json) | a project plan drawn as waves |
 | [`docs/shoot.mjs`](docs/shoot.mjs) | regenerates every image in this README — `npm run docs:images` |
 | [`schemas/`](schemas/) | JSON Schema for editor autocomplete — `strata schema` regenerates them |
 
