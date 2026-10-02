@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "strata finalize",
+    "subtitle": "Strata drawing itself: four gates between a document and a reader",
+    "output": "../../.strata/docs/finalize.html"
+  },
+  "nodes": [
+    {
+      "id": "doc",
+      "kind": "start",
+      "label": "candidate.json",
+      "sublabel": "typed meaning, no coordinates",
+      "sources": [
+        "src/cli/commands.mjs:20-33"
+      ]
+    },
+    {
+      "id": "schema",
+      "kind": "gate",
+      "label": "Schema?",
+      "sublabel": "shape, refs, citations",
+      "sources": [
+        "src/schema/validate.mjs:15-50"
+      ]
+    },
+    {
+      "id": "layout",
+      "kind": "action",
+      "label": "Compute layout",
+      "sublabel": "widen until it fits",
+      "sources": [
+        "src/render/index.mjs:28-47"
+      ]
+    },
+    {
+      "id": "geometry",
+      "kind": "gate",
+      "label": "Geometry?",
+      "sublabel": "overlap, clipping, routes",
+      "sources": [
+        "src/check/geometry.mjs:29-47"
+      ]
+    },
+    {
+      "id": "render",
+      "kind": "action",
+      "label": "Write HTML",
+      "sublabel": "cited code embedded",
+      "sources": [
+        "src/render/shell.mjs:27-55",
+        "src/render/snippets.mjs:24-55"
+      ]
+    },
+    {
+      "id": "browser",
+      "kind": "gate",
+      "label": "Browsers?",
+      "sublabel": "chromium and webkit",
+      "sources": [
+        "src/check/browser.mjs:55-116"
+      ]
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "label": "Handed over"
+    },
+    {
+      "id": "fail",
+      "kind": "end",
+      "label": "Exit 1",
+      "sublabel": "with the fix to make",
+      "sources": [
+        "src/cli/commands.mjs:105-110"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "id": "f1",
+      "from": "doc",
+      "to": "schema",
+      "sources": [
+        "src/cli/commands.mjs:106"
+      ]
+    },
+    {
+      "id": "f2",
+      "from": "schema",
+      "to": "layout",
+      "variant": "yes",
+      "sources": [
+        "src/cli/commands.mjs:54-56"
+      ],
+      "label": "valid"
+    },
+    {
+      "id": "f3",
+      "from": "layout",
+      "to": "geometry",
+      "sources": [
+        "src/cli/commands.mjs:58-59"
+      ]
+    },
+    {
+      "id": "f4",
+      "from": "geometry",
+      "to": "render",
+      "variant": "yes",
+      "sources": [
+        "src/cli/commands.mjs:65-67"
+      ],
+      "label": "clean"
+    },
+    {
+      "id": "f5",
+      "from": "render",
+      "to": "browser",
+      "sources": [
+        "src/cli/commands.mjs:112-113"
+      ]
+    },
+    {
+      "id": "f6",
+      "from": "browser",
+      "to": "done",
+      "variant": "yes",
+      "sources": [
+        "src/cli/commands.mjs:122"
+      ]
+    },
+    {
+      "id": "f7",
+      "from": "schema",
+      "to": "fail",
+      "variant": "no",
+      "sources": [
+        "src/cli/commands.mjs:50-53"
+      ],
+      "label": "invalid"
+    },
+    {
+      "id": "f8",
+      "from": "geometry",
+      "to": "fail",
+      "variant": "no",
+      "sources": [
+        "src/cli/commands.mjs:61-64"
+      ],
+      "label": "overlap"
+    },
+    {
+      "id": "f9",
+      "from": "browser",
+      "to": "fail",
+      "variant": "no",
+      "sources": [
+        "src/cli/commands.mjs:122"
+      ],
+      "label": "broken"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Meaning goes in",
+      "lede": "The agent writes what each thing is and where it belongs. The schema gate checks the shape, that every reference resolves, and with a repository root that every cited line exists and holds code rather than prose.",
+      "nodes": [
+        "doc",
+        "schema"
+      ],
+      "links": [
+        "f1"
+      ],
+      "notes": [
+        {
+          "k": "candidate.json",
+          "v": "Tiers, columns, order. Never an x or a y."
+        },
+        {
+          "k": "Schema?",
+          "v": "A citation that lands on a docstring fails here, not in review."
+        }
+      ]
+    },
+    {
+      "title": "Geometry is computed, then checked",
+      "lede": "The layout engine turns meaning into coordinates and widens the canvas until nothing is cramped. The geometry gate then measures what will actually be drawn: overlaps, clipped labels, connectors through boxes they do not touch.",
+      "nodes": [
+        "schema",
+        "layout",
+        "geometry"
+      ],
+      "links": [
+        "f2",
+        "f3"
+      ],
+      "notes": [
+        {
+          "k": "Compute layout",
+          "v": "Retries with a wider canvas before giving up, so most fixes never reach the author."
+        },
+        {
+          "k": "Geometry?",
+          "v": "Runs on the computed scene, so a failure names a node, not a pixel."
+        }
+      ]
+    },
+    {
+      "title": "Real browsers have the last word",
+      "lede": "One self-contained HTML file is written with the cited code inside it, then loaded in Chromium and WebKit. Every text run is measured in its box and every step must light something.",
+      "nodes": [
+        "geometry",
+        "render",
+        "browser",
+        "done"
+      ],
+      "links": [
+        "f4",
+        "f5",
+        "f6"
+      ],
+      "notes": [
+        {
+          "k": "Write HTML",
+          "v": "No server, no network: the reader gets the code with the diagram."
+        },
+        {
+          "k": "Browsers?",
+          "v": "WebKit catches what Chrome forgives, such as CSS filters on SVG."
+        }
+      ]
+    },
+    {
+      "title": "Any gate can stop it",
+      "lede": "The first failing gate ends the run with a non-zero exit and an actionable message, in the same vocabulary the author wrote in. A skipped gate is reported as skipped, never as passed.",
+      "nodes": [
+        "schema",
+        "geometry",
+        "browser",
+        "fail"
+      ],
+      "links": [
+        "f7",
+        "f8",
+        "f9"
+      ],
+      "notes": [
+        {
+          "k": "Exit 1",
+          "v": "Give it a different column, not nudge it forty pixels right."
+        }
+      ]
+    }
+  ]
+}

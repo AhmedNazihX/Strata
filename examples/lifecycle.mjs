@@ -22,7 +22,7 @@ export default {
     { id: 'r3', from: 'building', to: 'failed', variant: 'failure', label: 'tests red' },
     { id: 'r4', from: 'staged', to: 'canary', variant: 'transition', label: 'approved' },
     { id: 'r5', from: 'canary', to: 'live', variant: 'transition', label: 'budget held' },
-    { id: 'r6', from: 'canary', to: 'rolledback', variant: 'failure', label: 'budget burned' },
+    { id: 'r6', from: 'canary', to: 'rolledback', variant: 'failure', label: 'burned' },
     { id: 'r7', from: 'staged', to: 'failed', variant: 'timeout', label: 'no approval in 24h' },
     { id: 'r8', from: 'failed', to: 'queued', variant: 'retry', label: 'retry' },
   ],

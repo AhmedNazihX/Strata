@@ -6,6 +6,7 @@
   "type": "module",
   "private": true,
   "bin": { "strata": "./bin/strata.mjs" },
+  "scripts": { "docs:images": "node docs/shoot.mjs" },
   "engines": { "node": ">=18" },
   "dependencies": {},
   "optionalDependencies": {}

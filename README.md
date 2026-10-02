@@ -14,7 +14,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/preview.png" alt="A layered architecture diagram with an active path lit in amber and a narrated caption below it" width="900">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/hero-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/img/hero-light.png">
+    <img src="docs/img/hero-dark.png" alt="A layered architecture diagram of a checkout platform, with the payment path lit and a narrated caption below it" width="900">
+  </picture>
 </p>
 
 ---
@@ -43,7 +47,7 @@ connector drawn through a component it does not touch, a citation that contains 
 script error in Safari — all of them fail the build rather than reaching a reader.
 
 <p align="center">
-  <img src="docs/preview-light.png" alt="The same tool rendering a sequence diagram in its light theme" width="900">
+  <img src="docs/img/walkthrough.gif" alt="The walkthrough stepping through the checkout diagram: each step lights the components involved, pulses travel along the active links, and the caption explains the step" width="800">
 </p>
 
 ## Install
@@ -141,6 +145,59 @@ A minimal document:
 }
 ```
 
+Every picture below is rendered by the current build from [`examples/`](examples/); click one for
+the document that produced it.
+
+<table>
+  <tr>
+    <td width="50%">
+      <a href="examples/architecture.mjs"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/img/architecture-dark.png">
+        <source media="(prefers-color-scheme: light)" srcset="docs/img/architecture-light.png">
+        <img src="docs/img/architecture-dark.png" alt="An architecture diagram with tiers as horizontal rails">
+      </picture></a>
+      <p align="center"><code>architecture</code></p>
+    </td>
+    <td width="50%">
+      <a href="examples/workflow.mjs"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/img/workflow-dark.png">
+        <source media="(prefers-color-scheme: light)" srcset="docs/img/workflow-light.png">
+        <img src="docs/img/workflow-dark.png" alt="A workflow diagram of incident response, branching on severity">
+      </picture></a>
+      <p align="center"><code>workflow</code></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="examples/sequence.mjs"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/img/sequence-dark.png">
+        <source media="(prefers-color-scheme: light)" srcset="docs/img/sequence-light.png">
+        <img src="docs/img/sequence-dark.png" alt="A sequence diagram of a cache miss, participants as columns">
+      </picture></a>
+      <p align="center"><code>sequence</code></p>
+    </td>
+    <td width="50%">
+      <a href="examples/dataflow.mjs"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/img/dataflow-dark.png">
+        <source media="(prefers-color-scheme: light)" srcset="docs/img/dataflow-light.png">
+        <img src="docs/img/dataflow-dark.png" alt="A dataflow diagram with pipeline stages as columns">
+      </picture></a>
+      <p align="center"><code>dataflow</code></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="examples/lifecycle.mjs"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/img/lifecycle-dark.png">
+        <source media="(prefers-color-scheme: light)" srcset="docs/img/lifecycle-light.png">
+        <img src="docs/img/lifecycle-dark.png" alt="A lifecycle diagram of a release, from queued to live or rolled back">
+      </picture></a>
+      <p align="center"><code>lifecycle</code></p>
+    </td>
+    <td width="50%"></td>
+  </tr>
+</table>
+
 Mermaid works as input too — read it for topology, then author fresh. `flowchart` becomes a
 workflow, `sequenceDiagram` a sequence, `stateDiagram` a lifecycle.
 
@@ -194,6 +251,18 @@ With `--repo-root`, those lines are read at build time and **embedded in the HTM
 citation opens the real code with the cited range marked in green and four lines of context
 either side. The reader needs no repository, no network, and no link to a forge.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/citation-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/img/citation-light.png">
+    <img src="docs/img/citation-dark.png" alt="A node in Strata's own pipeline diagram opened to its citation: the embedded source, with the cited lines marked in green and context either side" width="900">
+  </picture>
+</p>
+
+The diagram above is Strata drawing its own `finalize` command, built from
+[`docs/src/finalize.json`](docs/src/finalize.json) with `--repo-root .`, so every node opens the
+code it describes.
+
 The gate **fails a range that contains no code**, because `file.py:1-30` lands on the module
 docstring and a citation made of prose proves only that somebody wrote a docstring.
 
@@ -221,6 +290,7 @@ Say which you want in the request and the agent will not ask.
 | [`references/repository-evidence.md`](references/repository-evidence.md) | diagramming code you have actually read |
 | [`references/troubleshooting.md`](references/troubleshooting.md) | every message and its fix |
 | [`examples/`](examples/) | one worked document per type |
+| [`docs/shoot.mjs`](docs/shoot.mjs) | regenerates every image in this README — `npm run docs:images` |
 | [`schemas/`](schemas/) | JSON Schema for editor autocomplete — `strata schema` regenerates them |
 
 ## Two rules the browsers forced on us
